@@ -1,7 +1,12 @@
-# dotfiles
+# Osiris Config
 
 Personal [Omarchy](https://omarchy.org/) config: the **Osiris** theme (dark
 indigo/violet, live animated wallpaper) and a custom floating-islands status bar.
+
+## Screenshots
+
+![Live wallpaper and floating-islands bar](screenshots/wallpaper.png)
+![btop and fastfetch themed to match](screenshots/terminal.png)
 
 ## What's here
 
