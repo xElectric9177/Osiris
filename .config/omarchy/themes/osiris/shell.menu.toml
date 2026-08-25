@@ -1,0 +1,18 @@
+[menu]
+# Osiris override for the generated [menu] section. Stock derives the card
+# border and the cursor row from `foreground`, which reads as neutral grey
+# against the rest of the theme — everything else here (bar islands, popups,
+# notifications) is already accent-lit. These pull the same purple through.
+# Clipboard and emoji pickers inherit these tokens too.
+background                = "#120a2e"
+background-alpha          = 0.96
+text                      = "#e4d4f0"
+border                    = "#9b2ecd"
+border-alpha              = 1.0
+scrim                     = "#05020f"
+scrim-alpha               = 0.45
+selected-background       = "#9b2ecd"
+selected-background-alpha = 0.22
+selected-text             = "#f0e4f7"
+selected-border           = "#9b2ecd"
+selected-border-alpha     = 0.65

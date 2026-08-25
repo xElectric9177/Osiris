@@ -2,13 +2,25 @@
 
 Personal [Omarchy](https://omarchy.org/) config: the **Osiris** theme (dark
 indigo/violet, live animated wallpaper), a custom floating-islands status bar
-with a now-playing pill (rounded art, live audio spectrum), a lock screen with
-a clock and username, a retinted screensaver, and a matching Spotify theme via
+with a now-playing pill (rounded art, live audio spectrum), an accent-lit
+launcher menu, slide-out animations on every popup, a lock screen with a clock
+and username, a retinted screensaver, and a matching Spotify theme via
 Spicetify.
 
 ## Screenshots
 
-![Live wallpaper and floating-islands bar](screenshots/wallpaper.png)
+Live wallpaper, floating-islands bar, and the now-playing pill open with its
+audio-spectrum visualizer:
+
+![Live wallpaper, floating-islands bar, and the now-playing popup](screenshots/desktop.png)
+
+The launcher menu, anchored under the bar's left island and lit in accent
+purple:
+
+![Launcher menu anchored under the bar](screenshots/menu.png)
+
+btop, fastfetch, and cava themed to match:
+
 ![btop and fastfetch themed to match](screenshots/terminal.png)
 
 ## What's here
@@ -16,10 +28,12 @@ Spicetify.
 ```
 .config/omarchy/
 ├── themes/osiris/            Theme: colors.toml + live wallpaper + static fallback
+│   └── shell.menu.toml       Accent-purple override for the menu/clipboard/emoji card chrome
 ├── plugins/
 │   ├── amendale.bar/         Custom bar (floating islands) — see its own README
 │   ├── amendale.media/       Now-playing pill: rounded art, progress bar — see its own README
-│   └── amendale.lock/        Lock screen: clock + username above the wallpaper — see its own README
+│   ├── amendale.lock/        Lock screen: clock + username above the wallpaper — see its own README
+│   └── amendale.menu/        Launcher menu, anchored under the bar's left island — see its own README
 ├── hooks/theme-set.d/        Starts/stops the live wallpaper to match the active theme
 ├── themed/                   Extra theme templates Omarchy doesn't ship by default
 │   ├── fastfetch.jsonc.tpl   Themes fastfetch (untouched by Omarchy's own templates)
@@ -33,7 +47,11 @@ Spicetify.
 └── color.ini                  Spotify color scheme, mapped from colors.toml (not auto-synced)
 
 .local/bin/
-└── omarchy-screensaver       Retints all ~35 TTE screensaver effects to Osiris — see Install for why this lives here instead of a theme file
+├── omarchy-screensaver       Retints all ~35 TTE screensaver effects to Osiris — see Install for why this lives here instead of a theme file
+└── osiris-popup-animation    Springy slide-out for every bar popup — see POPUP-ANIMATION.md
+
+.config/omarchy/hooks/post-update.d/
+└── osiris-popup-animation.sh Re-applies the popup animation after each `omarchy update`
 
 .config/cava/
 └── config.osiris             Feeds the media pill's audio-spectrum visualizer
@@ -68,6 +86,7 @@ cp -r .config/omarchy/themes/osiris ~/.config/omarchy/themes/
 cp -r .config/omarchy/plugins/amendale.bar ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.media ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.lock ~/.config/omarchy/plugins/
+cp -r .config/omarchy/plugins/amendale.menu ~/.config/omarchy/plugins/
 cp .config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh ~/.config/omarchy/hooks/theme-set.d/
 cp .config/omarchy/themed/*.tpl ~/.config/omarchy/themed/
 cp .config/omarchy/shell.json ~/.config/omarchy/shell.json
@@ -114,6 +133,44 @@ name, both need updating together (see each plugin's own README for why).
 `amendale.lock` needs no such manual step — it's a `service`-kind plugin, so
 the copied `shell.json`'s `plugins` array already lists `{"id": "amendale.lock"}`
 and disables the original the same way `omarchy plugin clone` would.
+
+`amendale.menu` is likewise already wired up by the copied `shell.json` (bar
+entry, `disabledPlugins`, `cloneSourceRestores`). Note that re-cloning it from
+stock on a fresh machine does *not* rewrite the plugin's references to itself —
+see its README for the two strings that need fixing by hand, both of which fail
+silently.
+
+The menu's purple chrome comes from `themes/osiris/shell.menu.toml`, not from
+the plugin: Omarchy merges any `shell.<section>.toml` found in a theme
+directory over the corresponding section of the generated `shell.toml`. It's
+copied along with the rest of the theme, so it needs no separate step — but it
+does mean the color and the placement live in two different files on purpose.
+
+## Popup animation (optional, needs root)
+
+Every bar popup springs out of the bar rather than fading in place. This is
+the one piece of this config that touches the packaged Omarchy tree — all the
+popups funnel through two shared files in `/usr/share/omarchy/shell/Ui/`, and
+there's no user-space override for them.
+
+```bash
+cp .local/bin/osiris-popup-animation ~/.local/bin/
+cp .config/omarchy/hooks/post-update.d/osiris-popup-animation.sh ~/.config/omarchy/hooks/post-update.d/
+chmod +x ~/.local/bin/osiris-popup-animation ~/.config/omarchy/hooks/post-update.d/osiris-popup-animation.sh
+
+osiris-popup-animation apply    # prompts for sudo, restarts the shell
+```
+
+The hook re-applies it after every `omarchy update`, patching whatever the new
+upstream version is — so this tracks upstream rather than freezing it. The
+patcher is idempotent, backs up the originals, and aborts with a specific
+error (changing nothing) if upstream ever moves the code it targets.
+`osiris-popup-animation revert` undoes it. See
+[`.local/bin/POPUP-ANIMATION.md`](.local/bin/POPUP-ANIMATION.md) for the full
+reasoning and the alternative that was rejected.
+
+Skipping this is fine — everything else works, popups just keep their stock
+140ms fade. The launcher menu's slide is in `amendale.menu` and needs no patch.
 
 ## Spotify (optional)
 

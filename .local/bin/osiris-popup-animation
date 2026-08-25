@@ -1,0 +1,443 @@
+#!/usr/bin/env python3
+"""Add Osiris slide-out animations to Omarchy's shared popup components.
+
+Omarchy's bar popups all funnel through two files in the packaged shell:
+
+    Ui/KeyboardPanel.qml  volume, bluetooth, network, monitor, power,
+                          weather, clock, agents, tailscale, dropbox
+    Ui/PopupCard.qml      tray, media pill
+
+Both ship with a 140ms opacity fade and no motion. This patches a slide onto
+each: the card starts pulled toward the bar and springs away from it, with the
+direction following whichever edge the bar is on.
+
+Those files live in /usr/share/omarchy, which `omarchy update` replaces
+wholesale, so this is installed as a post-update hook and re-applies itself
+after every update. That is deliberately *not* the same as vendoring copies of
+the files: each update lands the new upstream version and this re-patches it,
+so the customization rides along with upstream fixes instead of freezing them.
+
+The tradeoff is that a future upstream refactor could move the code the patch
+targets. Every replacement below is anchored to an exact snippet and the script
+aborts if one is missing, so that surfaces as a loud, specific error rather
+than a half-patched shell.
+
+Usage:
+    osiris-popup-animation apply     patch (default; needs root)
+    osiris-popup-animation check     report status, no changes, no root
+    osiris-popup-animation revert    restore from backup
+"""
+
+import os
+import shutil
+import subprocess
+import sys
+
+UI = "/usr/share/omarchy/shell/Ui"
+KEYBOARD_PANEL = os.path.join(UI, "KeyboardPanel.qml")
+POPUP_CARD = os.path.join(UI, "PopupCard.qml")
+BACKUP_REL = ".local/state/osiris/popup-animation-backup"
+# Where a backup taken before this was fixed would have landed: under sudo,
+# `~` is root's home, not the home of whoever asked for the patch.
+LEGACY_BACKUP_DIR = "/root/" + BACKUP_REL
+
+MARKER = "OSIRIS-SLIDE"
+
+# Motion. Opening overshoots its resting point and settles back; closing is a
+# plain ease-in, and deliberately quicker than the open - dismissing a popup
+# shouldn't make you wait for it.
+DISTANCE_TOKEN = "Style.space(12)"
+OPEN_MS = 600
+CLOSE_MS = 400
+OVERSHOOT = 1.35
+# The stock opacity fade, which this rewrites alongside the slide. It must be
+# >= CLOSE_MS: both components drop the surface as soon as opacity reaches 0
+# (`visible: open || card.opacity > 0`), so a fade shorter than the retraction
+# would unmap the window mid-slide and cut the motion off.
+FADE_MS = 400
+
+
+def slide_props(bar_pos_expr):
+    """Shared slide properties. `bar_pos_expr` differs between the two files:
+    KeyboardPanel already exposes `barPos`, PopupCard reads bar.position."""
+    return f"""
+  // {MARKER}: popup slide-out. The card sits pulled toward the bar while
+  // hidden and springs away from it on open; direction follows the bar edge.
+  property int slideDistance: {DISTANCE_TOKEN}
+  readonly property string slideEdge: {bar_pos_expr}
+  readonly property real slideX: slideEdge === "left" ? -slideDistance
+    : (slideEdge === "right" ? slideDistance : 0)
+  readonly property real slideY: slideEdge === "bottom" ? slideDistance
+    : (slideEdge === "top" ? -slideDistance : 0)
+"""
+
+
+def behavior(axis, shown_expr, enabled_expr):
+    enabled = f"\n      enabled: {enabled_expr}" if enabled_expr else ""
+    return f"""    Behavior on {axis} {{{enabled}
+      NumberAnimation {{
+        duration: {shown_expr} ? {OPEN_MS} : {CLOSE_MS}
+        easing.type: {shown_expr} ? Easing.OutBack : Easing.InCubic
+        easing.overshoot: {OVERSHOOT}
+      }}
+    }}
+"""
+
+
+# --- KeyboardPanel -----------------------------------------------------------
+# Full-screen layer-shell surface with the card free-floating inside at
+# `cardOrigin`, so the card can be translated with no clipping to work around.
+
+KP_PROPS_ANCHOR = "  property bool focusPrimed: false\n"
+KP_PROPS_NEW = KP_PROPS_ANCHOR + slide_props("barPos") + """  readonly property bool cardShown: open || popoutSwitching
+"""
+
+KP_CARD_ANCHOR = """    x: root.cardOrigin.x
+    y: root.cardOrigin.y
+"""
+KP_CARD_NEW = """    x: root.cardOrigin.x + (root.cardShown ? 0 : root.slideX)
+    y: root.cardOrigin.y + (root.cardShown ? 0 : root.slideY)
+"""
+
+# Slide is suppressed during a popout switch for the same reason the stock
+# opacity Behavior is: handing off between two bar popups should snap, not
+# animate through an intermediate position.
+KP_GUARD = "!root.popoutSwitching && !root.popoutSwitchClosing"
+KP_BEHAVIOR_ANCHOR = """    Behavior on opacity {
+      enabled: !root.popoutSwitching && !root.popoutSwitchClosing
+      NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+    }
+"""
+KP_BEHAVIOR_NEW = (
+    behavior("x", "root.cardShown", KP_GUARD)
+    + behavior("y", "root.cardShown", KP_GUARD)
+    + f"""    Behavior on opacity {{
+      enabled: !root.popoutSwitching && !root.popoutSwitchClosing
+      NumberAnimation {{ duration: {FADE_MS}; easing.type: Easing.OutCubic }}
+    }}
+"""
+)
+
+# --- PopupCard ---------------------------------------------------------------
+# A real xdg-popup sized to its content, so translating the card inside it
+# would clip against the surface edge. The window is padded by slideDistance
+# on the slide axis and the anchor rect is shifted back by the same amount,
+# which leaves the card's resting position on screen exactly where it was
+# while giving the motion room to travel (and to overshoot).
+
+PC_PROPS_ANCHOR = '  property string triggerMode: "click"\n'
+PC_PROPS_NEW = PC_PROPS_ANCHOR + slide_props(
+    'bar ? bar.position : "top"'
+) + """  readonly property bool slideVertical: slideEdge === "top" || slideEdge === "bottom"
+  readonly property int slidePadX: slideVertical ? 0 : slideDistance
+  readonly property int slidePadY: slideVertical ? slideDistance : 0
+"""
+
+PC_SIZE_ANCHOR = """  implicitWidth: contentWidth
+  implicitHeight: contentHeight
+"""
+PC_SIZE_NEW = """  implicitWidth: contentWidth + slidePadX * 2
+  implicitHeight: contentHeight + slidePadY * 2
+"""
+
+# The anchoring math positions the *card*, so it must measure the card rather
+# than the now-padded window, or every popup drifts by the pad.
+PC_DIMS_ANCHOR = """      var popupWidth = root.implicitWidth
+      var popupHeight = root.implicitHeight
+"""
+PC_DIMS_NEW = """      var popupWidth = root.contentWidth
+      var popupHeight = root.contentHeight
+"""
+
+PC_CENTER_ANCHOR = """        popupAnchor.rect.x = Math.round(cx)
+        popupAnchor.rect.y = Math.round(cy)
+"""
+PC_CENTER_NEW = """        popupAnchor.rect.x = Math.round(cx - root.slidePadX)
+        popupAnchor.rect.y = Math.round(cy - root.slidePadY)
+"""
+
+PC_RECT_ANCHOR = """      popupAnchor.rect.x = Math.round(point.x)
+      popupAnchor.rect.y = Math.round(point.y)
+"""
+PC_RECT_NEW = """      popupAnchor.rect.x = Math.round(point.x - root.slidePadX)
+      popupAnchor.rect.y = Math.round(point.y - root.slidePadY)
+"""
+
+PC_CARD_ANCHOR = """  BorderSurface {
+    id: card
+    anchors.fill: parent
+"""
+PC_CARD_NEW = """  BorderSurface {
+    id: card
+    x: root.slidePadX + (root.open ? 0 : root.slideX)
+    y: root.slidePadY + (root.open ? 0 : root.slideY)
+    width: root.contentWidth
+    height: root.contentHeight
+"""
+
+PC_BEHAVIOR_ANCHOR = """    Behavior on opacity {
+      NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+    }
+"""
+PC_BEHAVIOR_NEW = (
+    behavior("x", "root.open", None)
+    + behavior("y", "root.open", None)
+    + f"""    Behavior on opacity {{
+      NumberAnimation {{ duration: {FADE_MS}; easing.type: Easing.OutCubic }}
+    }}
+"""
+)
+
+PATCHES = {
+    KEYBOARD_PANEL: [
+        ("slide properties", KP_PROPS_ANCHOR, KP_PROPS_NEW),
+        ("card offset", KP_CARD_ANCHOR, KP_CARD_NEW),
+        ("slide behaviors", KP_BEHAVIOR_ANCHOR, KP_BEHAVIOR_NEW),
+    ],
+    POPUP_CARD: [
+        ("slide properties", PC_PROPS_ANCHOR, PC_PROPS_NEW),
+        ("window padding", PC_SIZE_ANCHOR, PC_SIZE_NEW),
+        ("anchor dimensions", PC_DIMS_ANCHOR, PC_DIMS_NEW),
+        ("centered anchor offset", PC_CENTER_ANCHOR, PC_CENTER_NEW),
+        ("anchor rect offset", PC_RECT_ANCHOR, PC_RECT_NEW),
+        ("card offset", PC_CARD_ANCHOR, PC_CARD_NEW),
+        ("slide behaviors", PC_BEHAVIOR_ANCHOR, PC_BEHAVIOR_NEW),
+    ],
+}
+
+
+def invoking_user():
+    """The user who invoked us, seen through sudo or pkexec."""
+    user = os.environ.get("SUDO_USER")
+    if user:
+        return user
+    uid = os.environ.get("PKEXEC_UID")
+    if uid:
+        try:
+            import pwd
+            return pwd.getpwuid(int(uid)).pw_name
+        except (KeyError, ValueError):
+            pass
+    return None
+
+
+def backup_dir():
+    """Resolve the backup location against the *invoking* user's home.
+
+    `os.path.expanduser("~")` would give root's home once we've re-exec'd under
+    sudo/pkexec, stashing the originals somewhere the user who asked for the
+    patch can't read."""
+    user = invoking_user()
+    if user:
+        try:
+            import pwd
+            return os.path.join(pwd.getpwnam(user).pw_dir, BACKUP_REL)
+        except KeyError:
+            pass
+    return os.path.join(os.path.expanduser("~"), BACKUP_REL)
+
+
+def is_patched(text):
+    return MARKER in text
+
+
+def check():
+    ok = True
+    for path in PATCHES:
+        if not os.path.exists(path):
+            print(f"missing: {path}")
+            ok = False
+            continue
+        with open(path) as f:
+            text = f.read()
+        state = "patched" if is_patched(text) else "stock"
+        print(f"{state:8}  {path}")
+        if state == "stock":
+            ok = False
+    return ok
+
+
+def stock_text(path):
+    """The unpatched contents of `path`.
+
+    An already-patched file can't be re-patched in place, and its anchors are
+    gone, so tuning anything above (durations, easing, distance) has to start
+    from the original. Recover it from whichever backup is available."""
+    with open(path) as f:
+        text = f.read()
+    if not is_patched(text):
+        return text
+    for candidate in (backup_dir(), LEGACY_BACKUP_DIR):
+        backup = os.path.join(candidate, os.path.basename(path))
+        if not os.path.exists(backup):
+            continue
+        with open(backup) as f:
+            saved = f.read()
+        if not is_patched(saved):
+            return saved
+    return None
+
+
+def apply():
+    # Build and verify every file before writing anything, so a refactor
+    # upstream can't leave one file patched and the other not.
+    planned = {}
+    for path, patches in PATCHES.items():
+        if not os.path.exists(path):
+            sys.exit(f"error: {path} not found - is Omarchy installed?")
+        original = stock_text(path)
+        if original is None:
+            sys.exit(
+                f"error: {os.path.basename(path)} is already patched and no "
+                f"clean backup was found to rebuild from.\n"
+                f"Run `omarchy update` to restore the stock file, then re-apply."
+            )
+        text = original
+        for name, old, new in patches:
+            count = text.count(old)
+            if count != 1:
+                sys.exit(
+                    f"error: {os.path.basename(path)}: expected exactly one "
+                    f"match for '{name}', found {count}.\n"
+                    f"Upstream has likely refactored this file. The patch needs "
+                    f"updating before it can be re-applied; the shell is "
+                    f"untouched and still works, just without the animation."
+                )
+            text = text.replace(old, new, 1)
+        planned[path] = (original, text)
+
+    backups = backup_dir()
+    os.makedirs(backups, exist_ok=True)
+    wrote = False
+    for path, (original, text) in planned.items():
+        # Stash the pristine original before the first patch. Re-applying with
+        # different settings must not overwrite it with patched content.
+        backup = os.path.join(backups, os.path.basename(path))
+        if not os.path.exists(backup):
+            with open(backup, "w") as f:
+                f.write(original)
+        with open(path) as f:
+            if f.read() == text:
+                continue
+        with open(path, "w") as f:
+            f.write(text)
+        print(f"patched: {path}")
+        wrote = True
+
+    # We ran as root, so everything just written is root-owned. Hand the
+    # backup tree back to the user whose home it lives in.
+    user = invoking_user()
+    if user:
+        subprocess.run(["chown", "-R", f"{user}:", backups], check=False)
+
+    if not wrote:
+        print("already up to date - no changes needed")
+        return False
+    print(f"originals backed up to {backups}")
+    return True
+
+
+def revert():
+    restored = False
+    # LEGACY_BACKUP_DIR covers backups taken before the location was fixed.
+    for candidate in (backup_dir(), LEGACY_BACKUP_DIR):
+        for path in PATCHES:
+            backup = os.path.join(candidate, os.path.basename(path))
+            if os.path.exists(backup):
+                shutil.copy2(backup, path)
+                print(f"restored: {path}")
+                restored = True
+        if restored:
+            break
+    if not restored:
+        print("no backup found - run `omarchy update` to restore stock files")
+
+
+def main():
+    action = sys.argv[1] if len(sys.argv) > 1 else "apply"
+
+    if action == "check":
+        sys.exit(0 if check() else 1)
+
+    if action not in ("apply", "revert"):
+        sys.exit(f"usage: {os.path.basename(sys.argv[0])} [apply|check|revert]")
+
+    # Re-exec with privilege when not already root. A terminal (the post-update
+    # hook, or a normal shell) is the right place for a sudo prompt. Without one
+    # sudo can only fail, so fall back to pkexec and let Omarchy's polkit agent
+    # raise a graphical prompt instead.
+    if os.geteuid() != 0:
+        me = os.path.abspath(__file__)
+        if sys.stdin.isatty() or sys.stderr.isatty():
+            os.execvp("sudo", ["sudo", sys.executable, me, action])
+        os.execvp("pkexec", ["pkexec", sys.executable, me, action])
+
+    # Only bounce the shell when something actually changed - a needless
+    # restart tears down open popups and panels for no reason.
+    if action == "apply":
+        if not apply():
+            return
+    else:
+        revert()
+
+    restart_shell()
+
+
+def restart_shell():
+    """Reload the shell so the change is live immediately. Best-effort: if this
+    can't work out how to reach the user's session, the animation simply waits
+    for the next shell restart."""
+    # sudo and pkexec identify the calling user differently.
+    user = os.environ.get("SUDO_USER")
+    uid = os.environ.get("PKEXEC_UID")
+    if not user and uid:
+        try:
+            import pwd
+            user = pwd.getpwuid(int(uid)).pw_name
+        except (KeyError, ValueError):
+            user = None
+    if not user:
+        print("patched; run `omarchy restart shell` to load it")
+        return
+
+    try:
+        import pwd
+        target_uid = pwd.getpwnam(user).pw_uid
+    except KeyError:
+        print("patched; run `omarchy restart shell` to load it")
+        return
+
+    # `runuser -u` does NOT reset the environment, so without this the shell
+    # would be restarted carrying root's HOME. That matters more than it looks:
+    # the shell resolves its config as $HOME/.config/omarchy/shell.json, so a
+    # leaked HOME=/root makes it read a file that doesn't exist, silently fall
+    # back to the built-in defaults (which differ from the user's - bar
+    # transparency among them), and potentially persist those. Hand it the
+    # target user's own HOME and runtime dir.
+    try:
+        import pwd
+        home = pwd.getpwnam(user).pw_dir
+    except KeyError:
+        print("patched; run `omarchy restart shell` to load it")
+        return
+
+    env = dict(os.environ,
+               HOME=home,
+               USER=user,
+               LOGNAME=user,
+               XDG_RUNTIME_DIR=f"/run/user/{target_uid}")
+    # Root's own session pointers would be actively misleading here.
+    for leaked in ("XDG_CONFIG_HOME", "XDG_STATE_HOME", "XDG_DATA_HOME",
+                   "SUDO_USER", "SUDO_UID", "SUDO_GID", "PKEXEC_UID"):
+        env.pop(leaked, None)
+
+    result = subprocess.run(
+        ["runuser", "-u", user, "--", "omarchy", "restart", "shell"],
+        check=False, env=env,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if result.returncode != 0:
+        print("patched; run `omarchy restart shell` to load it")
+
+
+if __name__ == "__main__":
+    main()
