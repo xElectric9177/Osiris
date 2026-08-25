@@ -562,6 +562,22 @@ Item {
     return BarModel.entriesAfter(entries, name)
   }
 
+  // Pulls one named widget out of a region's entries into its own list, so it
+  // can render as a separate floating pill instead of sharing its region's
+  // main island.
+  function entriesExcludingId(entries, id) {
+    var result = []
+    for (var i = 0; i < entries.length; i++) {
+      if (root.entryId(entries[i]) !== id) result.push(entries[i])
+    }
+    return result
+  }
+
+  function entryOnlyId(entries, id) {
+    var idx = root.entryIndex(entries, id)
+    return idx === -1 ? [] : [entries[idx]]
+  }
+
   function canonicalWidgetId(name) {
     return Util.canonicalWidgetId(name)
   }
@@ -1135,6 +1151,7 @@ Item {
         CenterModules { anchors.fill: parent }
 
         BorderSurface {
+          id: leftPill
           visible: leftGroup.width > 0
           anchors.left: parent.left
           anchors.leftMargin: parent.islandGap
@@ -1146,10 +1163,31 @@ Item {
           borderSpec: Border.flat(parent.islandGlow, 1)
         }
 
-        LeftModules {
+        ModuleList {
           id: leftGroup
+          entries: root.entriesExcludingId(root.layoutEntries("left"), "omarchy.media")
+          region: "left"
           anchors.left: parent.left
           anchors.leftMargin: parent.islandGap + Style.space(8)
+          anchors.verticalCenter: parent.verticalCenter
+        }
+
+        BorderSurface {
+          visible: leftMediaGroup.width > 0
+          x: leftPill.visible ? (leftPill.x + leftPill.width + parent.islandGap) : parent.islandGap
+          anchors.verticalCenter: parent.verticalCenter
+          width: leftMediaGroup.width + Style.space(16)
+          height: parent.islandHeight
+          radius: height / 2
+          color: "transparent"
+          borderSpec: Border.flat(parent.islandGlow, 1)
+        }
+
+        ModuleList {
+          id: leftMediaGroup
+          entries: root.entryOnlyId(root.layoutEntries("left"), "omarchy.media")
+          region: "left"
+          x: leftPill.visible ? (leftPill.x + leftPill.width + parent.islandGap + Style.space(8)) : (parent.islandGap + Style.space(8))
           anchors.verticalCenter: parent.verticalCenter
         }
 
@@ -1201,6 +1239,7 @@ Item {
         CenterModules { anchors.fill: parent }
 
         BorderSurface {
+          id: topPill
           visible: topGroup.height > 0
           anchors.top: parent.top
           anchors.topMargin: parent.islandGap
@@ -1212,10 +1251,31 @@ Item {
           borderSpec: Border.flat(parent.islandGlow, 1)
         }
 
-        LeftModules {
+        ModuleList {
           id: topGroup
+          entries: root.entriesExcludingId(root.layoutEntries("left"), "omarchy.media")
+          region: "left"
           anchors.top: parent.top
           anchors.topMargin: parent.islandGap + Style.space(8)
+          anchors.horizontalCenter: parent.horizontalCenter
+        }
+
+        BorderSurface {
+          visible: topMediaGroup.height > 0
+          y: topPill.visible ? (topPill.y + topPill.height + parent.islandGap) : parent.islandGap
+          anchors.horizontalCenter: parent.horizontalCenter
+          width: parent.islandWidth
+          height: topMediaGroup.height + Style.space(16)
+          radius: width / 2
+          color: "transparent"
+          borderSpec: Border.flat(parent.islandGlow, 1)
+        }
+
+        ModuleList {
+          id: topMediaGroup
+          entries: root.entryOnlyId(root.layoutEntries("left"), "omarchy.media")
+          region: "left"
+          y: topPill.visible ? (topPill.y + topPill.height + parent.islandGap + Style.space(8)) : (parent.islandGap + Style.space(8))
           anchors.horizontalCenter: parent.horizontalCenter
         }
 
