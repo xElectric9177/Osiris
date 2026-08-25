@@ -1,0 +1,35 @@
+Third-party assets in this repository
+=====================================
+
+The GPL v3 in LICENSE covers the configuration, plugins, scripts, and
+documentation in this repository. It does NOT cover the wallpaper described
+below, which is a third-party work included here for convenience.
+
+
+Live wallpaper
+--------------
+
+Files:
+    .config/omarchy/themes/osiris/backgrounds/osiris-live.mp4
+    .config/omarchy/themes/osiris/backgrounds/osiris-live-still.png
+    (the .png is a frame extracted from the .mp4, so the same terms apply)
+
+Obtained from:
+    https://www.desktophut.com/sad-purple-girl-live-wallpaper
+
+We are not the author or copyright holder of this wallpaper. It was
+downloaded from DesktopHut and is included so the theme works out of the box.
+No ownership is claimed over it, and it is not offered under this
+repository's licence.
+
+DesktopHut's copyright policy states that only wallpapers carrying a
+"© www.desktophut.com" watermark are their property, and that everything else
+"published on this website [is] copyrighted by their respective authors".
+This video carries a watermark, but not DesktopHut's, so the original author
+appears to be a third party we have not been able to identify. If you know
+who made it, please open an issue so proper credit can be given.
+
+If you are the rights holder and want this removed, open an issue or contact
+the repository owner and it will be taken down.
+
+The screenshots in screenshots/ show this wallpaper as part of a desktop.

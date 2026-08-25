@@ -183,3 +183,22 @@ spicetify apply
 
 Restart Spotify to see it — `spicetify apply` patches the installed app's
 files on disk, so a copy already running won't pick up the change until then.
+
+## Credits and licence
+
+The config, plugins, scripts, and docs here are GPL v3 (see [`LICENSE`](LICENSE)).
+
+**The wallpaper is not ours.** `osiris-live.mp4` and the still frame derived
+from it were downloaded from
+[DesktopHut](https://www.desktophut.com/sad-purple-girl-live-wallpaper) and are
+bundled so the theme works out of the box. We are not the author or copyright
+holder, claim no ownership, and the GPL v3 above does not apply to them.
+
+DesktopHut's copyright policy says only wallpapers watermarked
+`© www.desktophut.com` are theirs and that everything else is "copyrighted by
+their respective authors" — this video carries a watermark that isn't
+DesktopHut's, so the original creator is someone we haven't been able to
+identify. If you know who made it, please open an issue so they can be
+credited properly. Rights holders: open an issue and it'll be removed.
+
+Full detail in [`NOTICE`](NOTICE).
