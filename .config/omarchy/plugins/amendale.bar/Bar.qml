@@ -1165,7 +1165,7 @@ Item {
 
         ModuleList {
           id: leftGroup
-          entries: root.entriesExcludingId(root.layoutEntries("left"), "omarchy.media")
+          entries: root.entriesExcludingId(root.layoutEntries("left"), "amendale.media")
           region: "left"
           anchors.left: parent.left
           anchors.leftMargin: parent.islandGap + Style.space(8)
@@ -1185,7 +1185,7 @@ Item {
 
         ModuleList {
           id: leftMediaGroup
-          entries: root.entryOnlyId(root.layoutEntries("left"), "omarchy.media")
+          entries: root.entryOnlyId(root.layoutEntries("left"), "amendale.media")
           region: "left"
           x: leftPill.visible ? (leftPill.x + leftPill.width + parent.islandGap + Style.space(8)) : (parent.islandGap + Style.space(8))
           anchors.verticalCenter: parent.verticalCenter
@@ -1253,7 +1253,7 @@ Item {
 
         ModuleList {
           id: topGroup
-          entries: root.entriesExcludingId(root.layoutEntries("left"), "omarchy.media")
+          entries: root.entriesExcludingId(root.layoutEntries("left"), "amendale.media")
           region: "left"
           anchors.top: parent.top
           anchors.topMargin: parent.islandGap + Style.space(8)
@@ -1273,7 +1273,7 @@ Item {
 
         ModuleList {
           id: topMediaGroup
-          entries: root.entryOnlyId(root.layoutEntries("left"), "omarchy.media")
+          entries: root.entryOnlyId(root.layoutEntries("left"), "amendale.media")
           region: "left"
           y: topPill.visible ? (topPill.y + topPill.height + parent.islandGap + Style.space(8)) : (parent.islandGap + Style.space(8))
           anchors.horizontalCenter: parent.horizontalCenter

@@ -1,0 +1,50 @@
+# amendale.media — Osiris media player pill
+
+Clone of the built-in `omarchy.media` widget (MPRIS now-playing), rendered as its
+own floating pill (via `amendale.bar`'s pill-splitting) instead of sharing the
+left island with the menu/workspaces, with a redesigned popup and a fixed
+scrolling-title animation.
+
+## What's different from stock `omarchy.media`
+
+- **`moduleName` and the service lookup** (`bar?.shell?.firstPartyServiceFor(...)`)
+  point at `amendale.media` instead of `omarchy.media`. Services are registered
+  by their plugin manifest's own `id`, so a clone's service instance lives under
+  the clone's id — the clone process copies the QML verbatim and doesn't rewrite
+  these internal self-references, so left as `omarchy.media` the widget would
+  silently find no service (the original is disabled) and never show anything.
+- **Click mapping swapped**: left-click now opens the popup (was play/pause),
+  right-click is the quick play/pause toggle (was popup). Middle-click (next)
+  and scroll (prev/next) are unchanged.
+- **Rounded album art**: plain `clip: true` on a `Rectangle` only clips to its
+  bounding box, not its rounded shape, so genuinely rounding the art needed the
+  same `MultiEffect` + mask-`Item` technique used elsewhere in the shell
+  (`image-picker/ImagePicker.qml`) — a hidden `Item` with `layer.enabled: true`
+  containing a plain rounded `Rectangle`, used as `maskSource` for a
+  `layer.effect: MultiEffect { maskEnabled: true }` wrapping the `Image`.
+- **Progress bar + elapsed/total time**, added below the art/title row. MPRIS
+  only pushes `position` updates on seeks or play/pause, not every second, so a
+  local `trackPositionBase` + timestamp is interpolated between updates via a
+  500ms timer (only running while the popup is open and something's playing)
+  and resynced on `positionChanged`/`isPlayingChanged`.
+- **Scrolling title fix**: `labelText.implicitWidth` is volatile — it takes a
+  couple of layout passes to settle after font load, and changes again on every
+  track change. The stock widget binds the scroll animation's `from`/`to`/
+  `duration` live to it, so every settle-jump implicitly restarts the
+  animation before it's visibly moved, and a long track changing to another
+  long track leaves stale distances (since `needsScroll` never flips false in
+  between to trigger a recompute). Fixed with a 150ms debounce on any
+  text/width change that snapshots a stable scroll span, or resets `x` to 0 for
+  a short title that doesn't need to scroll (previously: a short title after a
+  long one could get stuck showing blank space instead of full static text).
+
+## Setup
+
+```
+omarchy plugin clone omarchy.media   # creates ~/.config/omarchy/plugins/<user>.media/
+```
+
+then overwrite the clone's `BarWidget.qml` with this one, add `{"id": "<user>.media"}`
+to `shell.json`'s bar layout (the clone process does this automatically and
+disables the original), and make sure `<user>.bar`'s pill-splitting filters on
+the clone's id, not `omarchy.media` — see `amendale.bar`'s README.

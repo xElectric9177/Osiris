@@ -13,7 +13,9 @@ indigo/violet, live animated wallpaper) and a custom floating-islands status bar
 ```
 .config/omarchy/
 ├── themes/osiris/            Theme: colors.toml + live wallpaper + static fallback
-├── plugins/amendale.bar/     Custom bar (floating islands) — see its own README
+├── plugins/
+│   ├── amendale.bar/         Custom bar (floating islands) — see its own README
+│   └── amendale.media/       Now-playing pill: rounded art, progress bar — see its own README
 ├── hooks/theme-set.d/        Starts/stops the live wallpaper to match the active theme
 ├── themed/                   Extra theme templates Omarchy doesn't ship by default
 │   ├── fastfetch.jsonc.tpl   Themes fastfetch (untouched by Omarchy's own templates)
@@ -21,7 +23,7 @@ indigo/violet, live animated wallpaper) and a custom floating-islands status bar
 └── shell.json                Bar layout + transparency
 
 .config/hypr/
-└── looknfeel.lua             10% opacity on unfocused windows
+└── looknfeel.lua             10% opacity on unfocused windows, 8px rounding system-wide
 ```
 
 Everything Omarchy already themes automatically from `colors.toml` — terminals
@@ -41,6 +43,7 @@ automatically since it uses semantic ANSI color names rather than hex.
 ```bash
 cp -r .config/omarchy/themes/osiris ~/.config/omarchy/themes/
 cp -r .config/omarchy/plugins/amendale.bar ~/.config/omarchy/plugins/
+cp -r .config/omarchy/plugins/amendale.media ~/.config/omarchy/plugins/
 cp .config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh ~/.config/omarchy/hooks/theme-set.d/
 cp .config/omarchy/themed/*.tpl ~/.config/omarchy/themed/
 cp .config/omarchy/shell.json ~/.config/omarchy/shell.json
@@ -64,3 +67,8 @@ plugin-clone bar-swap path has a bug where a `required property` on the cloned
 clone works around it, but if you re-clone from stock `omarchy.bar` on a fresh
 machine, you'll hit that same bug and need to drop `required` from
 `omarchyPath` / `barWidgetRegistry` / `barConfig` again.
+
+Similarly, `amendale.media`'s `shell.json` entry (also already in the copied
+file) is `{"id": "amendale.media"}`, and `amendale.bar`'s pill-splitting filters
+on that exact id — if you ever re-clone the media widget under a different
+name, both need updating together (see each plugin's own README for why).

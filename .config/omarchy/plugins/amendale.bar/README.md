@@ -32,14 +32,17 @@ edges, instead of one continuous bar strip.
   properties) so it hugs the actual collapsed width and only grows — smoothly,
   matching the tray's own 600ms reveal animation — when the drawer is genuinely
   expanded.
-- **`omarchy.media` gets its own pill**: `root.entriesExcludingId()` /
-  `root.entryOnlyId()` split the `"left"` region's entries so `omarchy.media`
-  renders as a separate `ModuleList` + `BorderSurface` positioned right after the
-  main left pill (`leftPill.x + leftPill.width + islandGap`), instead of sharing
-  one island with the menu/workspaces group. Both `ModuleList`s keep
-  `region: "left"` so hotkeys/drag-and-drop still treat it as one logical region;
-  only the *visual* grouping is split. Same pattern mirrored in `verticalBar`
-  (`topGroup` / `topMediaGroup`, stacked on the y-axis instead).
+- **The media widget gets its own pill**: `root.entriesExcludingId()` /
+  `root.entryOnlyId()` split the `"left"` region's entries so `amendale.media`
+  (see its own plugin README — it's a clone too) renders as a separate
+  `ModuleList` + `BorderSurface` positioned right after the main left pill
+  (`leftPill.x + leftPill.width + islandGap`), instead of sharing one island
+  with the menu/workspaces group. Both `ModuleList`s keep `region: "left"` so
+  hotkeys/drag-and-drop still treat it as one logical region; only the *visual*
+  grouping is split. Same pattern mirrored in `verticalBar` (`topGroup` /
+  `topMediaGroup`, stacked on the y-axis instead). The filter id is hardcoded
+  to whatever the media widget's *current* plugin id is — if it's ever
+  re-cloned under a different name, this needs updating too.
 
 ## Setup
 

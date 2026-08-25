@@ -25,11 +25,14 @@
 --   },
 -- })
 
--- Slight transparency on unfocused windows to help the focused one stand out.
+-- Slight transparency on unfocused windows to help the focused one stand out,
+-- plus a small rounding so windows and shell popups aren't sharp-cornered
+-- (the shell's own corner radius follows this same value).
 hl.config({
   decoration = {
     active_opacity = 1.0,
     inactive_opacity = 0.9,
+    rounding = 8,
   },
 })
 
