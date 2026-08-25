@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import Quickshell
+import Quickshell.Io
 import qs.Ui
 import qs.Commons
 
@@ -50,6 +51,9 @@ BarWidget {
 
   property bool popupOpen: false
   onPopupOpenChanged: if (popupOpen) root.resyncTrackPosition()
+
+  readonly property int visualizerBarCount: 24
+  property var visualizerBars: []
 
   function close() { popupOpen = false }
   property real maxLabelWidth: 180
@@ -176,6 +180,30 @@ BarWidget {
     onTriggered: root._positionTick++
   }
 
+  // Live spectrum from whatever's currently playing through the system's
+  // default audio output (the standard scope for a desktop cava widget —
+  // not literally scoped to just this MPRIS player, though in practice
+  // that's almost always the same thing). Only runs while the popup is open
+  // and something's actually playing.
+  Process {
+    id: cavaProc
+    running: root.popupOpen && root.activePlayer && root.activePlayer.isPlaying
+    command: ["cava", "-p", Quickshell.env("HOME") + "/.config/cava/config.osiris"]
+    stdout: SplitParser {
+      onRead: function(line) {
+        var parts = line.split(";")
+        var vals = []
+        for (var i = 0; i < parts.length; i++) {
+          if (parts[i] === "") continue
+          var n = parseInt(parts[i], 10)
+          vals.push(isNaN(n) ? 0 : n)
+        }
+        if (vals.length > 0) root.visualizerBars = vals
+      }
+    }
+    onRunningChanged: if (!running) root.visualizerBars = []
+  }
+
   PopupCard {
     id: popup
     anchorItem: root
@@ -288,27 +316,31 @@ BarWidget {
         spacing: Style.space(4)
         visible: root.hasProgress
 
-        BorderSurface {
-          id: progressTrack
+        Item {
+          id: visualizer
           width: parent.width
-          height: Style.space(6)
-          radius: height / 2
-          color: Style.normalFillFor(root.bar.foreground, Color.accent)
-          borderSpec: Border.none()
+          height: Style.space(28)
 
-          Rectangle {
-            anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            height: parent.height
-            radius: height / 2
-            color: Color.accent
-            width: root.trackLength > 0
-              ? Math.max(height, parent.width * Math.min(1, root.trackPosition / root.trackLength))
-              : 0
+          readonly property real barGap: Style.space(2)
+          readonly property real barWidth: (width - (root.visualizerBarCount - 1) * barGap) / root.visualizerBarCount
 
-            Behavior on width {
-              enabled: root.popupOpen
-              NumberAnimation { duration: 400; easing.type: Easing.Linear }
+          Repeater {
+            model: root.visualizerBarCount
+
+            Rectangle {
+              required property int index
+              readonly property real level: index < root.visualizerBars.length ? root.visualizerBars[index] : 0
+
+              x: index * (visualizer.barWidth + visualizer.barGap)
+              anchors.bottom: parent.bottom
+              width: visualizer.barWidth
+              height: Math.max(visualizer.barWidth, (level / 100) * visualizer.height)
+              radius: width / 2
+              color: Color.accent
+
+              Behavior on height {
+                NumberAnimation { duration: 70; easing.type: Easing.OutQuad }
+              }
             }
           }
         }

@@ -22,11 +22,20 @@ scrolling-title animation.
   (`image-picker/ImagePicker.qml`) — a hidden `Item` with `layer.enabled: true`
   containing a plain rounded `Rectangle`, used as `maskSource` for a
   `layer.effect: MultiEffect { maskEnabled: true }` wrapping the `Image`.
-- **Progress bar + elapsed/total time**, added below the art/title row. MPRIS
-  only pushes `position` updates on seeks or play/pause, not every second, so a
-  local `trackPositionBase` + timestamp is interpolated between updates via a
-  500ms timer (only running while the popup is open and something's playing)
-  and resynced on `positionChanged`/`isPlayingChanged`.
+- **Live cava audio-spectrum visualizer + elapsed/total time**, added below the
+  art/title row (replaced an earlier flat progress-fill bar). A `cava` process
+  (config: `~/.config/cava/config.osiris` — 24 bars, PipeWire input targeting
+  `@DEFAULT_SINK@.monitor` explicitly, since "auto" picked up the *default
+  source* — usually a microphone — rather than a monitor of what's actually
+  playing, raw ASCII output) runs only while the popup is open and something's
+  playing; each line of output is 24 semicolon-separated 0–100 values driving
+  a row of animated bars. Needs a few seconds after each fresh start for
+  cava's own `autosens` to calibrate — quiet/flat at first is normal, not a
+  bug. Time labels use the same interpolated-position mechanism as before:
+  MPRIS only pushes `position` updates on seeks or play/pause, not every
+  second, so a local `trackPositionBase` + timestamp is interpolated between
+  updates via a 500ms timer and resynced on
+  `positionChanged`/`isPlayingChanged`.
 - **Scrolling title fix**: `labelText.implicitWidth` is volatile — it takes a
   couple of layout passes to settle after font load, and changes again on every
   track change. The stock widget binds the scroll animation's `from`/`to`/

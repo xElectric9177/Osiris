@@ -1,7 +1,9 @@
 # Osiris Config
 
 Personal [Omarchy](https://omarchy.org/) config: the **Osiris** theme (dark
-indigo/violet, live animated wallpaper) and a custom floating-islands status bar.
+indigo/violet, live animated wallpaper), a custom floating-islands status bar
+with a now-playing pill (rounded art, live audio spectrum), and a matching
+Spotify theme via Spicetify.
 
 ## Screenshots
 
@@ -24,6 +26,9 @@ indigo/violet, live animated wallpaper) and a custom floating-islands status bar
 
 .config/hypr/
 └── looknfeel.lua             10% opacity on unfocused windows, 8px rounding system-wide
+
+.config/spicetify/Themes/Osiris/
+└── color.ini                  Spotify color scheme, mapped from colors.toml (not auto-synced)
 ```
 
 Everything Omarchy already themes automatically from `colors.toml` — terminals
@@ -37,6 +42,11 @@ automatically since it uses semantic ANSI color names rather than hex.
 - [Omarchy](https://omarchy.org/)
 - [`mpvpaper`](https://github.com/GhostNaN/mpvpaper) (AUR) — plays the live
   wallpaper. Without it, Omarchy falls back to the static still image.
+- [`cava`](https://github.com/karlstav/cava) (official repos, `pacman -S cava`)
+  — powers the live audio-spectrum visualizer in the media pill's popup. Needs
+  PipeWire (standard on Omarchy). Without it, that section just shows idle dots.
+- [`spicetify-cli`](https://github.com/spicetify/cli) (AUR) — only needed if
+  you also want the matching Spotify theme; everything else works without it.
 
 ## Install
 
@@ -48,6 +58,7 @@ cp .config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh ~/.config/oma
 cp .config/omarchy/themed/*.tpl ~/.config/omarchy/themed/
 cp .config/omarchy/shell.json ~/.config/omarchy/shell.json
 cp .config/hypr/looknfeel.lua ~/.config/hypr/looknfeel.lua
+mkdir -p ~/.config/cava && cp .config/cava/config.osiris ~/.config/cava/
 
 chmod +x ~/.config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh
 
@@ -72,3 +83,15 @@ Similarly, `amendale.media`'s `shell.json` entry (also already in the copied
 file) is `{"id": "amendale.media"}`, and `amendale.bar`'s pill-splitting filters
 on that exact id — if you ever re-clone the media widget under a different
 name, both need updating together (see each plugin's own README for why).
+
+## Spotify (optional)
+
+```bash
+mkdir -p ~/.config/spicetify/Themes/Osiris
+cp .config/spicetify/Themes/Osiris/color.ini ~/.config/spicetify/Themes/Osiris/
+spicetify config current_theme Osiris color_scheme Osiris
+spicetify apply
+```
+
+Restart Spotify to see it — `spicetify apply` patches the installed app's
+files on disk, so a copy already running won't pick up the change until then.
