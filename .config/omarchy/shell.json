@@ -62,15 +62,21 @@
     "id": "amendale.bar"
   },
   "idle": {
-    "lock": 300,
-    "screensaver": 150
+    "lock": 1200,
+    "screensaver": 900
   },
-  "plugins": [],
+  "plugins": [
+    {
+      "id": "amendale.lock"
+    }
+  ],
   "version": 1,
   "disabledPlugins": [
-    "omarchy.media"
+    "omarchy.media",
+    "omarchy.lock"
   ],
   "cloneSourceRestores": [
-    "amendale.media"
+    "amendale.media",
+    "amendale.lock"
   ]
 }

@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# omarchy:summary=Run the Omarchy screensaver using random TTE effects, retinted to Osiris.
+# User override of /usr/share/omarchy/bin/omarchy-screensaver (shadowed via
+# ~/.local/bin being prepended to PATH in ~/.bashrc) - keeps the original's
+# behavior, just swaps --random-effect (whose per-effect defaults can't be
+# recolored) for our own selection loop with an Osiris-tinted color set per
+# effect. Colors are the Osiris palette from
+# ~/.config/omarchy/themes/osiris/colors.toml - not auto-synced, update here
+# by hand if that palette changes.
+
+screensaver_in_focus() {
+  hyprctl activewindow -j | jq -e '.class == "org.omarchy.screensaver"' >/dev/null 2>&1
+}
+
+exit_screensaver() {
+  hyprctl eval 'hl.config({ cursor = { invisible = false } })' &>/dev/null || hyprctl keyword cursor:invisible false &>/dev/null || true
+  pkill -x ttfx 2>/dev/null
+  pkill -f '[o]rg.omarchy.screensaver' 2>/dev/null
+  exit 0
+}
+
+trap exit_screensaver SIGINT SIGTERM SIGHUP SIGQUIT
+
+printf '\033]11;rgb:00/00/00\007'  # Set background color to black
+
+hyprctl eval 'hl.config({ cursor = { invisible = true } })' &>/dev/null || hyprctl keyword cursor:invisible true &>/dev/null
+
+tty=$(tty 2>/dev/null)
+
+wait_for_terminal_resize() {
+  local deadline=$((SECONDS + 2))
+  while ((SECONDS < deadline)) && [[ $(stty size 2>/dev/null) == "24 80" ]]; do
+    sleep 0.02
+  done
+}
+
+wait_for_terminal_resize
+
+# Osiris palette: accent, magenta, cyan, blue, selection/dark, foreground/white
+FINAL=(9B2ECD 7EC8E3 FFFFFF)
+
+EFFECTS=(beams binarypath blackhole bouncyballs bubbles burn colorshift crumble decrypt errorcorrect expand fireworks highlight laseretch matrix middleout orbittingvolley overflow pour print rain randomsequence rings scattered slice slide smoke spotlights spray swarm sweep synthgrid thunderstorm unstable vhstape waves wipe)
+
+effect_args() {
+  case "$1" in
+    beams) echo --beam-gradient-stops FFFFFF 7EC8E3 9B2ECD ;;
+    binarypath) echo --binary-colors 5C4A78 9B2ECD ;;
+    blackhole) echo --blackhole-color 7EC8E3 --star-colors 9B2ECD C060E0 7EC8E3 7C5CFF FFFFFF ;;
+    bouncyballs) echo --ball-colors 9B2ECD C060E0 7EC8E3 7C5CFF ;;
+    bubbles) echo --bubble-colors 9B2ECD C060E0 7EC8E3 7C5CFF --pop-color FFFFFF ;;
+    burn) echo --starting-color 5C4A78 --burn-colors C060E0 9B2ECD 2E1F47 ;;
+    colorshift) echo --gradient-stops 9B2ECD C060E0 7EC8E3 7C5CFF E4D4F0 ;;
+    decrypt) echo --ciphertext-colors 2E1F47 5C4A78 9B2ECD ;;
+    errorcorrect) echo --error-color FF5C8A --correct-color 7EC8E3 ;;
+    fireworks) echo --firework-colors 9B2ECD C060E0 7EC8E3 7C5CFF FFFFFF ;;
+    laseretch) echo --cool-gradient-stops C060E0 2E1F47 --laser-gradient-stops FFFFFF 7EC8E3 ;;
+    matrix) echo --highlight-color 7EC8E3 --rain-color-gradient 9B2ECD 2E1F47 ;;
+    middleout) echo --starting-color 2E1F47 ;;
+    overflow) echo --overflow-gradient-stops 9B2ECD 7EC8E3 FFFFFF ;;
+    pour) echo --starting-color FFFFFF ;;
+    rain) echo --rain-colors 9B2ECD C060E0 7EC8E3 7C5CFF ;;
+    rings) echo --ring-colors 9B2ECD C060E0 7EC8E3 ;;
+    smoke) echo --starting-color 2E1F47 --smoke-gradient-stops 5C4A78 9B2ECD 7EC8E3 ;;
+    swarm) echo --base-color 9B2ECD C060E0 7EC8E3 --flash-color FFFFFF ;;
+    synthgrid) echo --grid-gradient-stops 9B2ECD FFFFFF --text-gradient-stops 9B2ECD 7EC8E3 FFFFFF ;;
+    thunderstorm) echo --lightning-color 7EC8E3 --glowing-text-color FFFFFF --spark-glow-color C060E0 ;;
+    unstable) echo --unstable-color C060E0 ;;
+    vhstape) echo --glitch-line-colors FFFFFF C060E0 7EC8E3 9B2ECD FFFFFF --glitch-wave-colors FFFFFF C060E0 7EC8E3 9B2ECD FFFFFF ;;
+    waves) echo --wave-gradient-stops 9B2ECD C060E0 7EC8E3 C060E0 9B2ECD ;;
+    *) ;;
+  esac
+}
+
+while true; do
+  effect=${EFFECTS[$RANDOM % ${#EFFECTS[@]}]}
+  # synthgrid has no --final-gradient-stops of its own (uses
+  # --text-gradient-stops instead, set in effect_args) - passing it errors.
+  finalargs=(--final-gradient-stops "${FINAL[@]}")
+  [[ "$effect" == "synthgrid" ]] && finalargs=()
+  # Word-splitting the unquoted command substitution is intentional here -
+  # effect_args echoes a flat list of separate CLI arguments (flag names and
+  # hex colors, nothing containing spaces that needs preserving). Global
+  # options (-i, --frame-rate, etc.) must precede the subcommand name;
+  # per-effect color flags must follow it.
+  # shellcheck disable=SC2046
+  ttfx -i ~/.config/omarchy/branding/screensaver.txt \
+    --frame-rate 120 --canvas-width 0 --canvas-height 0 --reuse-canvas --anchor-canvas c --anchor-text c \
+    --no-eol --no-restore-cursor \
+    "$effect" "${finalargs[@]}" $(effect_args "$effect") &
+
+  while pgrep -t "${tty#/dev/}" -x ttfx >/dev/null; do
+    if read -n1 -t 1 || ! screensaver_in_focus; then
+      exit_screensaver
+    fi
+  done
+done
