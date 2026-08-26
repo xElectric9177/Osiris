@@ -25,6 +25,11 @@ btop, fastfetch, and cava themed to match:
 
 ![btop and fastfetch themed to match](screenshots/terminal.png)
 
+Discord, Neovim and Spotify carrying the same palette — note Discord's member
+list collapsed to the avatar strip on its right edge, which expands on hover:
+
+![Discord, LazyVim and Spotify themed to match](screenshots/apps.png)
+
 ## What's here
 
 ```
