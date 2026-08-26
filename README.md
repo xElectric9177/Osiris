@@ -4,8 +4,8 @@ Personal [Omarchy](https://omarchy.org/) config: the **Osiris** theme (dark
 indigo/violet, live animated wallpaper), a custom floating-islands status bar
 with a now-playing pill (rounded art, live audio spectrum), an accent-lit
 launcher menu, slide-out animations on every popup, a lock screen with a clock
-and username, a retinted screensaver, and a matching Spotify theme via
-Spicetify.
+and username, a retinted screensaver, a themed Neovim, and matching Spotify and
+Discord themes.
 
 Release history is in [`CHANGELOG.md`](CHANGELOG.md).
 

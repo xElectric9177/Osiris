@@ -7,7 +7,10 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
-## [Unreleased]
+## [v0.4] — 2026-08-26
+
+Adds Neovim and Discord to the set of things Osiris themes, and fixes two
+things that had quietly stopped working.
 
 ### Added
 
@@ -143,6 +146,7 @@ causes rather than being flaky.
   progress bar, split out into its own bar island.
 - System-wide 8px rounding and reduced opacity on unfocused windows.
 
+[v0.4]: https://github.com/xElectric9177/Osiris/compare/v0.3.1...v0.4
 [v0.3.1]: https://github.com/xElectric9177/Osiris/compare/v0.3...v0.3.1
 [v0.3]: https://github.com/xElectric9177/Osiris/compare/v0.2...v0.3
 [v0.2]: https://github.com/xElectric9177/Osiris/compare/v0.1...v0.2
