@@ -44,6 +44,18 @@ edges, instead of one continuous bar strip.
   to whatever the media widget's *current* plugin id is — if it's ever
   re-cloned under a different name, this needs updating too.
 
+- **Double-click transparency toggle removed** (`onDoubleClicked`, ~line 1667):
+  stock toggles `bar.transparent` when you double-click empty bar space and
+  persists it to `shell.json`. On a floating-islands bar, "empty bar space" is
+  most of the bar's width, so a stray double-click turns the islands into an
+  opaque slab — silently, with no undo and nothing on screen to explain what
+  happened. This was the actual cause of the bar "randomly losing
+  transparency"; the give-away was `shell.json` being mode 600, the signature
+  of the shell's own `mktemp`-and-`mv` config writer rather than a hand edit.
+  The handler now swallows the event, and `omarchy bar transparent
+  <true|false|toggle>` still sets it deliberately. `toggleTransparency()` is
+  left defined but uncalled, to keep this clone easy to diff against upstream.
+
 ## Setup
 
 ```

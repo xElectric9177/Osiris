@@ -7,6 +7,8 @@ launcher menu, slide-out animations on every popup, a lock screen with a clock
 and username, a retinted screensaver, and a matching Spotify theme via
 Spicetify.
 
+Release history is in [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Screenshots
 
 Live wallpaper, floating-islands bar, and the now-playing pill open with its
@@ -35,6 +37,7 @@ btop, fastfetch, and cava themed to match:
 │   ├── amendale.lock/        Lock screen: clock + username above the wallpaper — see its own README
 │   └── amendale.menu/        Launcher menu, anchored under the bar's left island — see its own README
 ├── hooks/theme-set.d/        Starts/stops the live wallpaper to match the active theme
+├── hooks/post-boot.d/        Starts the live wallpaper at login — nothing else would
 ├── themed/                   Extra theme templates Omarchy doesn't ship by default
 │   ├── fastfetch.jsonc.tpl   Themes fastfetch (untouched by Omarchy's own templates)
 │   └── lazygit.yml.tpl       Themes lazygit's UI chrome (borders/selection/accents)
@@ -48,6 +51,7 @@ btop, fastfetch, and cava themed to match:
 
 .local/bin/
 ├── omarchy-screensaver       Retints all ~35 TTE screensaver effects to Osiris — see Install for why this lives here instead of a theme file
+├── osiris-live-wallpaper     Launches the live wallpaper; shared by both hooks above
 └── osiris-popup-animation    Springy slide-out for every bar popup — see POPUP-ANIMATION.md
 
 .config/omarchy/hooks/post-update.d/
@@ -88,12 +92,16 @@ cp -r .config/omarchy/plugins/amendale.media ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.lock ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.menu ~/.config/omarchy/plugins/
 cp .config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh ~/.config/omarchy/hooks/theme-set.d/
+mkdir -p ~/.config/omarchy/hooks/post-boot.d
+cp .config/omarchy/hooks/post-boot.d/osiris-live-wallpaper.sh ~/.config/omarchy/hooks/post-boot.d/
 cp .config/omarchy/themed/*.tpl ~/.config/omarchy/themed/
 cp .config/omarchy/shell.json ~/.config/omarchy/shell.json
 cp .config/hypr/looknfeel.lua ~/.config/hypr/looknfeel.lua
 mkdir -p ~/.config/cava && cp .config/cava/config.osiris ~/.config/cava/
-mkdir -p ~/.local/bin && cp .local/bin/omarchy-screensaver ~/.local/bin/
-chmod +x ~/.config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh ~/.local/bin/omarchy-screensaver
+mkdir -p ~/.local/bin && cp .local/bin/omarchy-screensaver .local/bin/osiris-live-wallpaper ~/.local/bin/
+chmod +x ~/.config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh \
+         ~/.config/omarchy/hooks/post-boot.d/osiris-live-wallpaper.sh \
+         ~/.local/bin/omarchy-screensaver ~/.local/bin/osiris-live-wallpaper
 
 # fastfetch/lazygit read their live config through a symlink into the current
 # theme's rendered output, matching how Omarchy wires up btop — these aren't
@@ -145,6 +153,38 @@ the plugin: Omarchy merges any `shell.<section>.toml` found in a theme
 directory over the corresponding section of the generated `shell.toml`. It's
 copied along with the rest of the theme, so it needs no separate step — but it
 does mean the color and the placement live in two different files on purpose.
+
+## Live wallpaper
+
+`mpvpaper` plays `osiris-live.mp4` behind everything. Two details in
+`.local/bin/osiris-live-wallpaper` are load-bearing rather than preference,
+and both were found the hard way:
+
+**It runs on the `bottom` layer, not the default `background` layer.** Omarchy's
+shell paints the still wallpaper on its own layer-shell surface,
+`omarchy-background`, in the *background* layer — the same one `mpvpaper`
+defaults to. Within a single layer Hyprland stacks by map order, so whichever
+surface mapped last ends up on top. `mpvpaper` maps once, at boot or theme-set;
+the shell remaps `omarchy-background` every time it restarts — an
+`omarchy update`, a plugin reload, `omarchy restart shell`. After any of those
+the still image lands on top and the video is buried, still decoding at ~35% CPU
+and completely invisible. That looks exactly like "the wallpaper stopped
+animating", which is what made it hard to place.
+
+`-l bottom` puts it a whole layer level above `omarchy-background`, so the
+ordering can't be lost to a race no matter what remaps or when. Normal windows
+still draw above the bottom layer, so it behaves like a wallpaper in every other
+respect. Confirm it with `hyprctl layers` — `mpvpaper` should be under
+`Layer level 1 (bottom)` and `omarchy-background` under `Layer level 0`.
+
+**It starts from a `post-boot` hook, not just `theme-set`.** The theme-set hook
+only fires when the theme actually changes, so on its own the live wallpaper
+never comes back after a reboot — you get the static fallback until you
+re-apply the theme by hand. The post-boot hook (run by Omarchy from Hyprland's
+autostart, a couple of seconds in) reads the active theme itself and is a no-op
+under any theme other than `osiris`.
+
+Both hooks call the same script, so the flags exist in exactly one place.
 
 ## Popup animation (optional, needs root)
 

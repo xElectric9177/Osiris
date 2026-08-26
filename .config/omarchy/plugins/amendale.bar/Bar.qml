@@ -1664,15 +1664,19 @@ Item {
       }
     }
 
+    // Stock toggles bar transparency on a double-click of empty bar space.
+    // That gesture is deliberately dropped here: this bar is a row of floating
+    // islands, so "empty bar space" is most of its width, and an opaque slab
+    // is a visible regression rather than a variation. It was flipping
+    // bar.transparent to false in shell.json on a stray double-click, with no
+    // undo and nothing on screen to explain what had just happened.
+    //
+    // Swallow the event instead. `omarchy bar transparent <true|false|toggle>`
+    // still sets it deliberately, and toggleTransparency() above is left in
+    // place so this clone stays easy to diff against upstream.
     onDoubleClicked: function(mouse) {
-      if (suppressClick) {
-        suppressClick = false
-        return
-      }
-      if (mouse.button === Qt.LeftButton) {
-        root.toggleTransparency()
-        mouse.accepted = true
-      }
+      suppressClick = false
+      mouse.accepted = true
     }
   }
 
