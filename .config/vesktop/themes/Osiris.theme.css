@@ -1,0 +1,267 @@
+/**
+ * @name Osiris
+ * @author amendale
+ * @version 1.0.0
+ * @description Dark indigo/violet Discord theme matching the Osiris desktop. The member list collapses to a narrow strip and expands on hover.
+ * @source https://github.com/xElectric9177/Osiris
+ */
+
+/*
+ * Original work, not a fork of any existing theme.
+ *
+ * Almost all of the colour comes from section 2, which assigns Discord's own
+ * design tokens. That matters: themes that instead brute-force
+ * `background-color` against Discord's hashed class names (.members_c8ffbb)
+ * need thousands of lines and break every time Discord rebuilds a module.
+ * Driving the tokens costs a few dozen declarations and keeps working.
+ *
+ * Discord has migrated token names over time, so both the current family
+ * (--background-base-*, --background-surface-*) and the legacy one
+ * (--background-primary/secondary/tertiary) are set. Whichever the running
+ * client doesn't use is simply inert, so setting both is free.
+ *
+ * Class names are only used for the member-list behaviour in section 3, where
+ * there is no token to drive.
+ */
+
+/* ---------------------------------------------------------------- 1. palette
+   Straight from themes/osiris/colors.toml. Retune here, not below. */
+
+:root {
+  --osiris-bg-deepest: #05020f; /* server rail            */
+  --osiris-bg-deeper:  #09031a; /* channel sidebar        */
+  --osiris-bg:         #120a2e; /* chat surface           */
+  --osiris-bg-raised:  #2a1050; /* popovers, modals, code */
+  --osiris-selection:  #2e1f47;
+
+  --osiris-accent:        #9b2ecd;
+  --osiris-accent-bright: #c060e0;
+  --osiris-accent-soft:   rgba(155, 46, 205, 0.22);
+
+  --osiris-text:        #e4d4f0;
+  --osiris-text-strong: #f0e4f7;
+  --osiris-text-bright: #ffffff;
+  --osiris-text-muted:  #8a76a8;
+  --osiris-text-subtle: #5c4a78;
+
+  --osiris-red:    #ff5c8a;
+  --osiris-green:  #39ffb0;
+  --osiris-yellow: #f4d35e;
+  --osiris-blue:   #7c5cff;
+
+  --osiris-border:        rgba(155, 46, 205, 0.20);
+  --osiris-border-strong: rgba(155, 46, 205, 0.55);
+
+  /* Section 3 reads these, so the collapse geometry is tunable in one place. */
+  --osiris-members-collapsed: 60px;
+  --osiris-members-expanded: 240px;
+  --osiris-members-speed: 500ms;
+}
+
+/* ------------------------------------------------------- 2. Discord tokens */
+
+:root,
+.theme-dark,
+.theme-light,
+.visual-refresh {
+  /* surfaces — current token family */
+  --background-base-lowest: var(--osiris-bg-deepest);
+  --background-base-lower: var(--osiris-bg-deeper);
+  --background-base-low: var(--osiris-bg);
+  --background-surface-high: var(--osiris-bg-raised);
+  --background-surface-higher: var(--osiris-bg-raised);
+  --background-surface-highest: var(--osiris-bg-raised);
+  --bg-surface-raised: var(--osiris-bg-raised);
+  --bg-surface-overlay-tmp: var(--osiris-bg-raised);
+
+  /* surfaces — legacy token family */
+  --background-primary: var(--osiris-bg);
+  --background-secondary: var(--osiris-bg-deeper);
+  --background-secondary-alt: var(--osiris-bg-deepest);
+  --background-tertiary: var(--osiris-bg-deepest);
+  --background-floating: var(--osiris-bg-raised);
+  --background-nested-floating: var(--osiris-bg-raised);
+  --channeltextarea-background: var(--osiris-bg-raised);
+  --background-message-hover: rgba(155, 46, 205, 0.06);
+
+  /* translucent layers over the surfaces */
+  --background-mod-subtle: rgba(155, 46, 205, 0.08);
+  --background-mod-normal: rgba(155, 46, 205, 0.14);
+  --background-mod-strong: rgba(155, 46, 205, 0.22);
+  --background-mod-muted: rgba(92, 74, 120, 0.16);
+  --background-scrim: rgba(5, 2, 15, 0.75);
+  --background-scrim-lightbox: rgba(5, 2, 15, 0.88);
+
+  /* code blocks */
+  --background-code: var(--osiris-bg-deeper);
+  --code-background: var(--osiris-bg-deeper);
+
+  /* text */
+  --text-default: var(--osiris-text);
+  --text-normal: var(--osiris-text);
+  --text-strong: var(--osiris-text-strong);
+  --text-muted: var(--osiris-text-muted);
+  --text-subtle: var(--osiris-text-subtle);
+  --text-link: var(--osiris-accent-bright);
+  --text-link-low-saturation: var(--osiris-accent-bright);
+  --text-brand: var(--osiris-accent-bright);
+  --header-primary: var(--osiris-text-strong);
+  --header-secondary: var(--osiris-text-muted);
+  --channels-default: var(--osiris-text-muted);
+  --channel-icon: var(--osiris-text-subtle);
+  --channel-text-area-placeholder: var(--osiris-text-subtle);
+  --text-invert: var(--osiris-bg-deepest);
+
+  /* interactive states */
+  --interactive-normal: var(--osiris-text-muted);
+  --interactive-hover: var(--osiris-text-strong);
+  --interactive-active: var(--osiris-text-bright);
+  --interactive-muted: var(--osiris-text-subtle);
+  --interactive-text-default: var(--osiris-text-muted);
+  --interactive-text-hover: var(--osiris-text-strong);
+  --interactive-text-active: var(--osiris-text-bright);
+  --interactive-icon-default: var(--osiris-text-muted);
+  --interactive-icon-hover: var(--osiris-text-strong);
+  --interactive-icon-active: var(--osiris-accent-bright);
+  --interactive-background-hover: rgba(155, 46, 205, 0.12);
+  --interactive-background-active: var(--osiris-accent-soft);
+  --interactive-background-selected: var(--osiris-accent-soft);
+  --modal-background: var(--osiris-bg-raised);
+
+  /* borders */
+  --border: var(--osiris-border);
+  --border-normal: var(--osiris-border);
+  --border-subtle: var(--osiris-border);
+  --border-muted: var(--osiris-border);
+  --border-light: var(--osiris-border);
+  --border-strong: var(--osiris-border-strong);
+  --border-hover: var(--osiris-border-strong);
+  --border-focus: var(--osiris-accent);
+
+  /* brand — Discord blurple becomes Osiris purple */
+  --brand-260: var(--osiris-accent-soft);
+  --brand-360: var(--osiris-accent);
+  --brand-500: var(--osiris-accent);
+  --brand-experiment: var(--osiris-accent);
+  --brand-experiment-560: var(--osiris-accent);
+  --background-brand: var(--osiris-accent);
+  --background-accent: var(--osiris-accent);
+  --control-brand-foreground: var(--osiris-accent-bright);
+  --control-brand-foreground-new: var(--osiris-accent-bright);
+  --button-outline-brand-background-hover: var(--osiris-accent-soft);
+  --button-outline-brand-border-active: var(--osiris-accent);
+
+  /* status + feedback */
+  --text-status-online: var(--osiris-green);
+  --text-status-idle: var(--osiris-yellow);
+  --text-status-dnd: var(--osiris-red);
+  --text-status-offline: var(--osiris-text-subtle);
+  --text-feedback-critical: var(--osiris-red);
+  --text-feedback-positive: var(--osiris-green);
+  --text-feedback-warning: var(--osiris-yellow);
+  --text-feedback-info: var(--osiris-blue);
+  --background-feedback-critical: rgba(255, 92, 138, 0.12);
+  --background-feedback-positive: rgba(57, 255, 176, 0.12);
+  --background-feedback-warning: rgba(244, 211, 94, 0.12);
+  --background-feedback-info: rgba(124, 92, 255, 0.12);
+  --background-feedback-notification: var(--osiris-red);
+  --border-feedback-critical: var(--osiris-red);
+  --status-danger: var(--osiris-red);
+  --status-positive: var(--osiris-green);
+  --status-warning: var(--osiris-yellow);
+  --info-danger-foreground: var(--osiris-red);
+
+  /* mentions */
+  --mention-background: var(--osiris-accent-soft);
+  --mention-foreground: var(--osiris-accent-bright);
+
+  /* scrollbars */
+  --scrollbar-auto-thumb: var(--osiris-accent-soft);
+  --scrollbar-auto-track: transparent;
+  --scrollbar-thin-thumb: var(--osiris-accent-soft);
+  --scrollbar-thin-track: transparent;
+  --scrollbar-auto-scrollbar-color-thumb: var(--osiris-accent-soft);
+  --scrollbar-auto-scrollbar-color-track: transparent;
+
+  /* app frame */
+  --app-frame-background: var(--osiris-bg-deepest);
+  --app-frame-border: var(--osiris-border);
+}
+
+/* ------------------------------------------ 3. member list collapse/expand
+   The one behaviour carried over from Dark+, reimplemented.
+
+   Substring selectors rather than Discord's hashed class names, so a client
+   rebuild that changes the hash suffix doesn't break this. The three names
+   cannot cross-match: "members_" is not a substring of "membersWrap_" or
+   "membersGroup_" (the next character is W/G, not an underscore), and the
+   match is case-sensitive so "channelMembers_" and friends are excluded too.
+
+   The wrapper is taken out of flow and pinned right, so expanding it overlays
+   the chat instead of reflowing it — messages don't jump as the pointer
+   crosses. */
+
+[class*="membersWrap_"],
+[class*="members_"] {
+  width: var(--osiris-members-collapsed);
+  min-width: var(--osiris-members-collapsed);
+  transition: width var(--osiris-members-speed) ease,
+              min-width var(--osiris-members-speed) ease,
+              box-shadow var(--osiris-members-speed) ease;
+  z-index: 10;
+}
+
+[class*="membersWrap_"]:hover,
+[class*="members_"]:hover {
+  width: var(--osiris-members-expanded);
+  min-width: var(--osiris-members-expanded);
+}
+
+[class*="membersWrap_"] {
+  position: absolute;
+  right: 0;
+  height: 100%;
+}
+
+[class*="membersWrap_"]:hover {
+  box-shadow: 0 0 20px 10px rgba(5, 2, 15, 0.55);
+}
+
+/* Group headers ("ONLINE — 12") are noise at 60px, so they collapse away and
+   come back with the panel. */
+[class*="membersGroup_"] {
+  height: 0;
+  overflow: hidden;
+  transition: height var(--osiris-members-speed) ease;
+}
+
+[class*="members_"]:hover [class*="membersGroup_"] {
+  height: 40px;
+}
+
+/* Keep the channel header above the expanded panel. */
+[class*="title_"] {
+  z-index: 11;
+}
+
+/* ------------------------------------------------------------- 4. accents */
+
+::selection {
+  background: var(--osiris-accent-soft);
+  color: var(--osiris-text-bright);
+}
+
+/* Unread/ping pills and the active-channel marker, which Discord draws from
+   its own colour rather than a themeable token. */
+[class*="unreadPill_"],
+[class*="numberBadge_"],
+[class*="baseShapeRound_"][class*="pill_"] {
+  background-color: var(--osiris-accent) !important;
+}
+
+/* The rounded corner masks Discord paints behind the chat area; left unpainted
+   they show as default grey against the Osiris surfaces. */
+[class*="chatContent_"],
+[class*="chat_"] {
+  background-color: var(--osiris-bg);
+}

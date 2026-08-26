@@ -11,6 +11,17 @@ the letter.
 
 ### Added
 
+- **Osiris theme for Discord** (`.config/vesktop/themes/Osiris.theme.css`),
+  for Vesktop/Vencord. Original work rather than a fork: nearly all the colour
+  comes from assigning Discord's own design tokens, so it fits in under 300
+  lines where brute-forcing hashed class names takes well over a thousand and
+  breaks on every client rebuild. Both the current token family
+  (`--background-base-*`) and the legacy one (`--background-primary`) are set,
+  so it survives either client generation. The member list keeps the collapse-
+  to-60px / expand-to-240px-on-hover behaviour, targeted with substring
+  selectors instead of exact hashes so a Discord rebuild doesn't break it.
+  Self-contained — no `@import`, no remote assets.
+
 - **Neovim/LazyVim now follows the theme.** Omarchy renders a complete LazyVim
   colorscheme spec (`bjarneo/aether.nvim` fed the Osiris palette) into
   `~/.local/state/omarchy/current/theme/neovim.lua`, but reaches it only via a

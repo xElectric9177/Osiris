@@ -59,6 +59,9 @@ btop, fastfetch, and cava themed to match:
 
 .config/cava/
 └── config.osiris             Feeds the media pill's audio-spectrum visualizer
+
+.config/vesktop/themes/
+└── Osiris.theme.css          Discord theme (Vesktop/Vencord) — original, not a fork
 ```
 
 Everything Omarchy already themes automatically from `colors.toml` — terminals
@@ -85,6 +88,9 @@ at all; Omarchy replaced it with its own Quickshell lock screen (same for
   PipeWire (standard on Omarchy). Without it, that section just shows idle dots.
 - [`spicetify-cli`](https://github.com/spicetify/cli) (AUR) — only needed if
   you also want the matching Spotify theme; everything else works without it.
+- [Vesktop](https://github.com/Vencord/Vesktop) + [Vencord](https://vencord.dev/)
+  — only needed for the Discord theme. Any Vencord-capable client works; it's a
+  plain `.theme.css`.
 
 ## Install
 
@@ -255,6 +261,39 @@ spicetify apply
 
 Restart Spotify to see it — `spicetify apply` patches the installed app's
 files on disk, so a copy already running won't pick up the change until then.
+
+## Discord (optional)
+
+An Osiris theme for Discord, via Vesktop/Vencord. Copy it into the themes
+directory your client reads and enable it in **Settings → Themes**:
+
+```bash
+mkdir -p ~/.config/vesktop/themes
+cp .config/vesktop/themes/Osiris.theme.css ~/.config/vesktop/themes/
+```
+
+`~/.config/Vencord/themes/` is the right target instead for a Vencord install
+that isn't running under Vesktop.
+
+This is **original work, not a fork** of any existing theme. Nearly all of the
+colour comes from assigning Discord's own design tokens, which is why the whole
+thing is under 300 lines: themes that instead brute-force `background-color`
+against Discord's hashed class names (`.members_c8ffbb`) need well over a
+thousand lines and break whenever Discord rebuilds a module.
+
+Because Discord has renamed its tokens over time, both the current family
+(`--background-base-*`, `--background-surface-*`) and the legacy one
+(`--background-primary/secondary/tertiary`) are set. Whichever the running
+client doesn't use is simply inert.
+
+The one place tokens can't help is the **member list**, which collapses to a
+60px strip and expands to 240px on hover. That needs class names, so it uses
+substring selectors (`[class*="membersWrap_"]`) rather than the exact hashes —
+a client rebuild that changes the hash suffix won't break it. The three names
+can't cross-match, since `members_` isn't a substring of `membersWrap_` or
+`membersGroup_` and the match is case-sensitive.
+
+Nothing is fetched at runtime — no `@import`, no remote images.
 
 ## Credits and licence
 
