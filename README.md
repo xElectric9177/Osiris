@@ -156,9 +156,9 @@ does mean the color and the placement live in two different files on purpose.
 
 ## Live wallpaper
 
-`mpvpaper` plays `osiris-live.mp4` behind everything. Two details in
+`mpvpaper` plays `osiris-live.mp4` behind everything. Three details in
 `.local/bin/osiris-live-wallpaper` are load-bearing rather than preference,
-and both were found the hard way:
+and all three were found the hard way:
 
 **It runs on the `bottom` layer, not the default `background` layer.** Omarchy's
 shell paints the still wallpaper on its own layer-shell surface,
@@ -176,6 +176,19 @@ ordering can't be lost to a race no matter what remaps or when. Normal windows
 still draw above the bottom layer, so it behaves like a wallpaper in every other
 respect. Confirm it with `hyprctl layers` — `mpvpaper` should be under
 `Layer level 1 (bottom)` and `omarchy-background` under `Layer level 0`.
+
+**It runs with `load-scripts=no`.** The `mpv-mpris` package symlinks its
+plugin into mpv's *system-wide* script directory, so every mpv process registers
+on D-Bus as a media player — the wallpaper included. It then turns up in the
+now-playing popup as `osiris-live.mp4`, and not passively: a looping video is
+permanently "playing" and starts before anything else, so the shell's
+oldest-playing-wins tiebreak hands it the bar label over whatever music is
+actually on. The media keys route through that same service, so play/pause could
+land on the wallpaper too. The flag disables script auto-loading for this
+instance only — mpv used normally keeps its MPRIS integration, and the
+`mpv-mpris` package is untouched. Confirm with
+`busctl --user list | grep mpris`: there should be no
+`org.mpris.MediaPlayer2.mpv`.
 
 **It starts from a `post-boot` hook, not just `theme-set`.** The theme-set hook
 only fires when the theme actually changes, so on its own the live wallpaper

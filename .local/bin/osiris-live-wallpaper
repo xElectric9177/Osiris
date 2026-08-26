@@ -35,5 +35,18 @@ if [[ "$THEME_NAME" == "osiris" && -f "$VIDEO" ]] && command -v mpvpaper >/dev/n
   # The *bottom* layer is a whole level above *background*, so this ordering
   # can't be lost to a race no matter what remaps or when. Windows still draw
   # above the bottom layer, so it behaves exactly like a wallpaper.
-  mpvpaper -f -p -l bottom -o "no-audio loop" ALL "$VIDEO"
+  # load-scripts=no keeps the wallpaper out of the media system entirely.
+  #
+  # The mpv-mpris package symlinks its plugin into mpv's *system-wide* script
+  # directory (/etc/mpv/scripts/mpris.so), so every mpv process — this one
+  # included — registers on D-Bus as a media player. The wallpaper then appears
+  # in the now-playing popup as "osiris-live.mp4", and it does not just sit
+  # there: a looping video is permanently "playing" and starts before anything
+  # else, so the shell's oldest-playing-wins tiebreak hands it the bar label
+  # over whatever music is actually on. Media keys route through that same
+  # service, so play/pause could land on the wallpaper too.
+  #
+  # This disables script auto-loading for this instance only. mpv used normally
+  # keeps its MPRIS integration and the mpv-mpris package is untouched.
+  mpvpaper -f -p -l bottom -o "no-audio loop load-scripts=no" ALL "$VIDEO"
 fi

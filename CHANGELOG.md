@@ -7,6 +7,22 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [Unreleased]
+
+### Fixed
+
+- **Live wallpaper appearing as a media player.** The `mpv-mpris` package
+  symlinks its plugin into mpv's system-wide script directory, so every mpv
+  process registers on D-Bus — including the one `mpvpaper` runs for the
+  wallpaper. It showed in the now-playing popup as `osiris-live.mp4`, and not
+  merely as clutter: a looping video is permanently "playing" and starts before
+  anything else, so the shell's oldest-playing-wins tiebreak gave it the bar
+  label over whatever music was actually on, and the media keys — which route
+  through the same service — could land on the wallpaper. The wallpaper's mpv
+  now runs with `load-scripts=no`, so it never registers at all. Scoped to that
+  one process: mpv used normally keeps its MPRIS integration and the
+  `mpv-mpris` package is untouched.
+
 ## [v0.3.1] — 2026-08-26
 
 Bug-fix release. Two problems kept coming back — the live wallpaper freezing
