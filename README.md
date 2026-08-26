@@ -62,10 +62,13 @@ btop, fastfetch, and cava themed to match:
 ```
 
 Everything Omarchy already themes automatically from `colors.toml` — terminals
-(Alacritty/Foot/Kitty/Ghostty), btop, Neovim, VS Code, Chromium, Obsidian,
-keyboard RGB — needs no extra files here; it just picks up
+(Alacritty/Foot/Kitty/Ghostty), btop, VS Code, Chromium, Obsidian, keyboard RGB
+— needs no extra files here; it just picks up
 `themes/osiris/colors.toml` on `omarchy theme set osiris`. Starship also follows
-automatically since it uses semantic ANSI color names rather than hex. The lock
+automatically since it uses semantic ANSI color names rather than hex. Neovim is
+the exception that looks automatic but isn't: Omarchy renders a full LazyVim
+colorscheme spec into the theme output, but only reaches it through a symlink it
+never creates retroactively — see the Install step above. The lock
 screen is also already theme-reactive by default (only the clock/username are
 custom, in `amendale.lock`) — note this system doesn't actually run `hyprlock`
 at all; Omarchy replaced it with its own Quickshell lock screen (same for
@@ -108,6 +111,22 @@ chmod +x ~/.config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh \
 # copied files, they need to be (re)created on any machine this is installed on:
 ln -sf ~/.local/state/omarchy/current/theme/fastfetch.jsonc ~/.config/fastfetch/config.jsonc
 ln -sf ~/.local/state/omarchy/current/theme/lazygit.yml ~/.config/lazygit/config.yml
+
+# Neovim needs the same kind of link, but with a *relative* target — that is the
+# exact spelling Omarchy's own migrations match on, so a future migration will
+# recognise and maintain it. Note Omarchy only ever *repairs* this link and never
+# creates one (both migrations open with `[[ -L $theme_link ]] || exit 0`), so a
+# Neovim config that predates the Omarchy install silently stays on stock
+# tokyonight forever:
+ln -sfn ../../../../.local/state/omarchy/current/theme/neovim.lua ~/.config/nvim/lua/plugins/theme.lua
+
+# Plus Omarchy's own two glue files — copied from /etc/skel rather than vendored
+# here, so they track the omarchy-nvim package. Hot-reload retints an already-open
+# Neovim when the theme changes; all-themes pre-declares the colorscheme plugins
+# so switching doesn't stall on a clone.
+cp /etc/skel/.config/nvim/lua/plugins/omarchy-theme-hotreload.lua \
+   /etc/skel/.config/nvim/lua/plugins/all-themes.lua \
+   ~/.config/nvim/lua/plugins/
 
 omarchy theme set osiris
 ```

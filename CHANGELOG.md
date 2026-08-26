@@ -9,6 +9,19 @@ the letter.
 
 ## [Unreleased]
 
+### Added
+
+- **Neovim/LazyVim now follows the theme.** Omarchy renders a complete LazyVim
+  colorscheme spec (`bjarneo/aether.nvim` fed the Osiris palette) into
+  `~/.local/state/omarchy/current/theme/neovim.lua`, but reaches it only via a
+  symlink at `~/.config/nvim/lua/plugins/theme.lua` that it never creates
+  retroactively — both migrations that touch it bail unless the link already
+  exists. A Neovim config predating the Omarchy install therefore stays on stock
+  tokyonight indefinitely, which is what had happened here. Added that symlink,
+  plus Omarchy's `omarchy-theme-hotreload.lua` and `all-themes.lua` from
+  `/etc/skel`, so Neovim retints along with `omarchy theme set` instead of being
+  pinned to one palette.
+
 ### Fixed
 
 - **Live wallpaper appearing as a media player.** The `mpv-mpris` package
