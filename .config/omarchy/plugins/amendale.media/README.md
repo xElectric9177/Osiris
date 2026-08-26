@@ -46,6 +46,26 @@ scrolling-title animation.
   text/width change that snapshots a stable scroll span, or resets `x` to 0 for
   a short title that doesn't need to scroll (previously: a short title after a
   long one could get stuck showing blank space instead of full static text).
+- **Scroll ordering fix** (the debounce above wasn't enough): the animation was
+  a `NumberAnimation on x` value source whose `running` was bound to
+  `needsScroll` and whose `from`/`to` were bound to properties the debounce
+  timer assigned. The timer set `needsScroll` on its *first* line, which flipped
+  `running` true before `from`/`to` were assigned two lines later — so the
+  animation captured the initial `0 -> 0` span and looped over zero distance.
+  Changing `from`/`to` on a running animation does not restart it, and
+  `needsScroll` then stayed true from one long track to the next, so `running`
+  never went false -> true again and the real distances were never picked up.
+  Net effect: the first long title never scrolled, and later ones reused stale
+  spans. Now the animation is a plain `NumberAnimation` targeting
+  `labelText.x`, stopped and restarted explicitly in `applyScroll()`, which has
+  no ordering dependency. Confirmed in an isolated QML harness: the old shape
+  leaves `x` at 0 indefinitely, the new one scrolls.
+- **Whitespace collapse in the label**: MPRIS titles can carry embedded
+  newlines (Brave reports `"LATIN MAFIA\n Fred again.. - Alvafro"`), which
+  turns the label into a two-line `Text` inside a single-line-height clip — the
+  second line is invisible and `implicitWidth` measures only the longest line,
+  so the scroll span is wrong too. The label text now collapses whitespace runs
+  to single spaces.
 
 ## Setup
 

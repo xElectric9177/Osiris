@@ -24,6 +24,17 @@ the letter.
 
 ### Fixed
 
+- **Media pill's scrolling title had stopped.** The scroll was a
+  `NumberAnimation on x` value source whose `running` was bound to
+  `needsScroll` while its `from`/`to` were assigned afterwards by the debounce
+  timer — so it started with the initial `0 -> 0` span and looped over zero
+  distance. Changing from/to on a running animation does not restart it, and
+  `needsScroll` stayed true across track changes, so the real distances were
+  never picked up: the first long title never scrolled and later ones reused
+  stale spans. Driven explicitly now via `applyScroll()`, confirmed against an
+  isolated QML harness. The label also collapses whitespace runs, since MPRIS
+  titles can carry newlines that turn it into a clipped two-line `Text`.
+
 - **Live wallpaper appearing as a media player.** The `mpv-mpris` package
   symlinks its plugin into mpv's system-wide script directory, so every mpv
   process registers on D-Bus — including the one `mpvpaper` runs for the

@@ -90,7 +90,12 @@ BarWidget {
 
       Text {
         id: labelText
-        text: root.title + (root.artist ? "  ·  " + root.artist : "")
+        // Collapse whitespace runs. MPRIS titles sometimes carry embedded
+        // newlines (Brave currently reports "LATIN MAFIA\n Fred again.. -
+        // Alvafro"), which quietly turns this into a two-line Text inside a
+        // single-line-height clip: the second line is invisible and
+        // implicitWidth measures only the longest line, not the whole string.
+        text: (root.title + (root.artist ? "  ·  " + root.artist : "")).replace(/\s+/g, " ")
         color: root.bar.barForeground
         font.family: root.bar.fontFamily
         font.pixelSize: Style.font.body
@@ -107,35 +112,57 @@ BarWidget {
         // still gets fresh distances instead of the previous track's stale
         // ones.
         property bool needsScroll: false
-        property real scrollFrom: 0
-        property real scrollTo: 0
-        property real scrollDuration: 6000
+
+        // Suspended while the popup is open (the full title is shown there) and
+        // on a vertical bar, where there is no room to scroll into.
+        readonly property bool scrollAllowed: !root.popupOpen && !root.bar.vertical
 
         onImplicitWidthChanged: settleTimer.restart()
         onTextChanged: settleTimer.restart()
+        onScrollAllowedChanged: applyScroll()
 
+        // Drive the animation imperatively rather than binding a
+        // `NumberAnimation on x` value source to properties assigned here.
+        //
+        // That earlier shape had an ordering trap that stopped the scroll
+        // outright: `needsScroll` was assigned first, which flipped the value
+        // source's `running` binding true *before* from/to were assigned on the
+        // following lines — so it captured the initial 0 -> 0 span and looped
+        // over zero distance. Changing from/to on a running animation does not
+        // restart it, and `needsScroll` then stayed true from one track to the
+        // next, so `running` never went false -> true again and the real
+        // distances were never picked up. Explicit stop/start has no such
+        // ordering dependency and re-arms cleanly on every track change.
+        function applyScroll() {
+          scrollAnim.stop()
+          needsScroll = implicitWidth > scrollClip.width
+          if (!needsScroll || !scrollAllowed) {
+            x = 0
+            return
+          }
+          scrollAnim.from = scrollClip.width
+          scrollAnim.to = -implicitWidth
+          // Constant speed rather than constant duration, so a long title
+          // doesn't race past faster than a short one.
+          scrollAnim.duration = Math.max(6000, implicitWidth * 25)
+          scrollAnim.start()
+        }
+
+        // Text metrics take a couple of layout passes to settle (font loading,
+        // subpixel reflow) and change again on every track change, so
+        // implicitWidth is volatile. Wait for it to stop moving for a beat
+        // before snapshotting the span.
         Timer {
           id: settleTimer
           interval: 150
-          onTriggered: {
-            labelText.needsScroll = labelText.implicitWidth > scrollClip.width
-            if (labelText.needsScroll) {
-              labelText.scrollFrom = scrollClip.width
-              labelText.scrollTo = -labelText.implicitWidth
-              labelText.scrollDuration = Math.max(6000, labelText.implicitWidth * 25)
-            } else {
-              labelText.x = 0
-            }
-          }
+          onTriggered: labelText.applyScroll()
         }
 
-        NumberAnimation on x {
+        NumberAnimation {
           id: scrollAnim
-          running: labelText.needsScroll && !root.popupOpen && !root.bar.vertical
+          target: labelText
+          property: "x"
           loops: Animation.Infinite
-          duration: labelText.scrollDuration
-          from: labelText.scrollFrom
-          to: labelText.scrollTo
           easing.type: Easing.Linear
         }
       }
