@@ -41,8 +41,10 @@ list collapsed to the avatar strip on its right edge, which expands on hover:
 │   ├── amendale.media/       Now-playing pill: rounded art, progress bar — see its own README
 │   ├── amendale.lock/        Lock screen: clock + username above the wallpaper — see its own README
 │   └── amendale.menu/        Launcher menu, anchored under the bar's left island — see its own README
-├── hooks/theme-set.d/        Starts/stops the live wallpaper to match the active theme
+├── hooks/theme-set.d/        Live wallpaper + fastfetch logo, both following the active theme
 ├── hooks/post-boot.d/        Starts the live wallpaper at login — nothing else would
+├── branding/
+│   └── osiris-eye.txt        Braille eye used as the fastfetch + About logo (Osiris only)
 ├── themed/                   Extra theme templates Omarchy doesn't ship by default
 │   ├── fastfetch.jsonc.tpl   Themes fastfetch (untouched by Omarchy's own templates)
 │   └── lazygit.yml.tpl       Themes lazygit's UI chrome (borders/selection/accents)
@@ -56,6 +58,7 @@ list collapsed to the avatar strip on its right edge, which expands on hover:
 
 .local/bin/
 ├── omarchy-screensaver       Retints all ~35 TTE screensaver effects to Osiris — see Install for why this lives here instead of a theme file
+├── osiris-eye-logo           Draws the braille eye logo; re-run it to retune the art
 ├── osiris-live-wallpaper     Launches the live wallpaper; shared by both hooks above
 └── osiris-popup-animation    Springy slide-out for every bar popup — see POPUP-ANIMATION.md
 
@@ -228,6 +231,72 @@ autostart, a couple of seconds in) reads the active theme itself and is a no-op
 under any theme other than `osiris`.
 
 Both hooks call the same script, so the flags exist in exactly one place.
+
+## fastfetch logo
+
+`fastfetch` and Omarchy's About window both draw their logo from
+`~/.config/omarchy/branding/about.txt`. Under Osiris that is an eye, drawn in
+braille at the 54x26 the logo budget allows:
+
+```
+                           ⠄
+                           ⡀
+                           ⡀
+         ⡀       ⡀         ⡀        ⢀       ⢀
+    ⡀  ⠠   ⡀⠈  ⠠   ⠠ ⠂  ⡀⢈⢀⠄⡁⢀  ⠐ ⠄   ⠄  ⠁⢀   ⠄  ⢀
+  ⡀   ⠄  ⠐  ⠠ ⠁⢀ ⠂⠁⡀⠠⠐ ⠁ ⢌⢀⡃⡡ ⠈ ⠂⠄⢀⠈⠐ ⡀⠈ ⠄  ⠂  ⠠   ⢀
+⢀   ⠐ ⡀ ⠁⠠ ⠁⠠⡀⠁⢄⠐⢄⠑⡄⢄⢢⠨⡘⣸⡔⠤⡧⢢⣇⢃⠅⡔⡠⢠⠊⡠⠂⡠⠈⢀⠄⠈ ⠄⠈ ⢀ ⠂   ⡀
+  ⠐ ⠠   ⠂⠠⣀⠑⠠⢄⠑⠤⡑⢄⡱⡈⢎⣆⣃⣃⣷⣧⣯⣾⣼⣾⣘⣘⣰⡱⢁⢎⡠⢊⠤⠊⡠⠄⠊⣀⠄⠐   ⠄ ⠂
+⠐ ⠠ ⢀⡀⠁⠑⠐⠤⣀⠈⠒⠤⣉⣲⣭⢶⢞⢟⢝⢝⣕⣵⣷⣿⣿⣿⣿⣷⣷⣽⣝⢝⢟⢗⢶⢭⣖⣉⠤⠒⠁⣀⠤⠂⠊⠈⢀⡀ ⠄ ⠂
+⠠ ⠠⡀⣀⢀⠉⠁⠒⠢⠤⣨⣵⢞⢟⢕⢕⢕⢕⢕⣵⣿⣿⡿⠿⠿⢿⣿⣿⣿⣿⣿⣿⣷⣕⢕⢕⢕⢝⢝⢷⢮⣅⠤⠔⠒⠈⠉⡀⣀⢀⠄ ⠄
+⢀⡀⣀⢀⣀ ⠉⠉⣲⣴⢟⢕⢕⢕⢕⢕⢕⢕⢕⣵⣿⢟⡵⠚⠛⠓⠆⠈⠻⣿⣿⣿⣿⣿⣿⣗⢕⢕⢕⢕⢕⢕⢝⢝⢦⣖⠉⠉ ⣀⡀⣀⢀⡀
+     ⢉⣭⢞⢕⢕⢕⢕⢕⢕⢕⢕⢕⢕⢕⣿⡏⣾       ⢹⣿⣿⣿⣿⣿⣿⢕⢕⢕⢕⢕⢕⢕⢕⢕⢝⢷⣭⡉
+⠉⠈⠉⠉⠈⣉⣛⢷⣕⢕⢕⢕⢕⢕⢕⢕⢕⢕⢕⣿⣇⠹⠄      ⣸⣿⣿⣿⣿⣿⣿⢕⢕⢕⢕⢕⢕⢕⢕⢕⢕⡵⣛⣉⠁⠉⠉⠁⠉
+⠈⠁⠉⠈⠉ ⣀⣀⠽⠳⣕⣕⢕⢕⢕⢕⢕⢕⢕⢽⣿⣦⡀    ⢀⣴⣿⣿⣿⣿⣿⣿⢟⢕⢕⢕⢕⢕⢕⢕⣵⠟⠯⣀⣀ ⠉⠁⠉⠈⠁
+⠐ ⠐⠁⠉⠈⣀⡀⠤⠔⠒⢙⡳⢷⣕⣕⢕⢕⢕⢕⢝⢿⣿⣷⣶⣶⣾⣿⣿⣿⣿⣿⣿⣿⢟⢕⢕⢕⢕⣵⡵⢟⡋⠒⠢⠤⢀⣀⠁⠉⠈⠂ ⠂
+⠠ ⠐ ⠈⠁⡀⡠⠠⠒⠉⢀⠤⠒⣉⠽⣓⠷⢵⣵⣕⣕⣝⢟⢿⢿⣿⣿⣿⣿⢿⢟⣝⣕⣵⡵⠷⣛⠯⣉⠒⠤⡀⠉⠒⠄⢄⢀⠈⠁ ⠂ ⠄
+  ⠠ ⠐   ⠄⠐⠉⡠⠐⠊⡠⠒⡡⠊⡱⢁⢎⠏⡍⡍⡿⡟⡟⣿⢻⢿⢩⢩⠹⡱⡈⢎⠑⢌⠒⢄⠑⠂⢄⠉⠂⠠   ⠂ ⠄
+⠈   ⠠ ⠁ ⡀⠐ ⡀⠐⠁⡀⠊⠠⠊⡠⠃⠊⠜⢐⢡⢹⠣⠂⡗⠜⡏⡌⡂⠣⠑⠘⢄⠑⠄⠑⢀⠈⠂⢀ ⠂⢀ ⠈ ⠄   ⠁
+  ⠁   ⠂  ⠠  ⠐ ⡀⠈ ⠄⡀⠁⠐⠠ ⡀ ⢊ ⡅⡑ ⢀ ⠄⠂⠈⢀⠠ ⠁⢀ ⠂  ⠄  ⠐   ⠈
+    ⠁  ⠐   ⠁⢀  ⠐   ⠐ ⠄  ⠁⢈ ⠃⡁⠈  ⠠ ⠂   ⠂  ⡀⠈   ⠂  ⠈
+         ⠁       ⠁         ⠁        ⠈       ⠈
+                           ⠁
+                           ⠁
+                           ⠂
+```
+
+```bash
+cp .local/bin/osiris-eye-logo ~/.local/bin/
+cp .config/omarchy/branding/osiris-eye.txt ~/.config/omarchy/branding/
+cp .config/omarchy/hooks/theme-set.d/osiris-about-logo.sh ~/.config/omarchy/hooks/theme-set.d/
+chmod +x ~/.local/bin/osiris-eye-logo ~/.config/omarchy/hooks/theme-set.d/osiris-about-logo.sh
+omarchy theme set osiris   # applies it
+```
+
+**It's drawn, not transcoded.** Omarchy ships `omarchy-transcode-ascii`, so the
+obvious move is to run a picture of an eye through it. That does not survive the
+resample. A dotted eye reference is a *sparse dither* — the one this was modelled
+on had 4,422 white pixels scattered across 562x562 — so downscaling ~5x to the
+logo grid area-averages those dots into mid-grey, and the transcoder's hard
+threshold then either erases the rays entirely or, if the image is pre-blurred to
+consolidate them, welds the whole eye into a solid blob. `osiris-eye-logo` draws
+straight into the target grid instead, which sidesteps the resample and leaves
+every shape a named constant to retune. It's deterministic, so re-running it
+reproduces the committed file byte for byte.
+
+**It needs no colour markup.** The art is plain text with no `$1` placeholders in
+it. fastfetch applies `logo.color.1` to a file logo as a whole, and
+`themed/fastfetch.jsonc.tpl` sets that to the theme's `{{ accent }}`, so the eye
+recolours itself per theme for free.
+
+**A hook scopes it to Osiris.** `branding/about.txt` is global branding rather
+than part of a theme, so `hooks/theme-set.d/osiris-about-logo.sh` swaps it — the
+eye under `osiris`, Omarchy's stock mark under anything else, which is the same
+file `omarchy branding about reset` restores. It writes through a temp file and
+`mv`, because the About window re-renders whenever that file's mtime changes and
+a non-atomic write can be read half-finished. One consequence worth knowing:
+while Osiris is active the hook owns `about.txt`, so a logo set through the
+menu's *Set From Image* would be replaced at the next theme change.
 
 ## Popup animation (optional, needs root)
 

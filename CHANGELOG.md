@@ -7,6 +7,23 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [Unreleased]
+
+### Added
+
+- **The Osiris eye as the fastfetch and About logo**
+  (`.local/bin/osiris-eye-logo`, `.config/omarchy/branding/osiris-eye.txt`,
+  `.config/omarchy/hooks/theme-set.d/osiris-about-logo.sh`). Drawn straight into
+  the braille grid rather than transcoded from an image: a dotted eye reference
+  is a sparse dither, and downscaling one to the 54x26 logo budget either erases
+  the rays or, once blurred enough to keep them, welds the whole eye into a solid
+  blob. The generator is deterministic, so the committed art is reproducible. The
+  art needs no colour markup — fastfetch applies `logo.color.1` to a file logo as
+  a whole, so it picks up the theme's accent on its own. A theme-set hook scopes
+  it to Osiris and restores Omarchy's stock mark under every other theme.
+- Screenshot showing Discord, Neovim and Spotify carrying the palette
+  (`screenshots/apps.png`).
+
 ## [v0.4] — 2026-08-26
 
 Adds Neovim and Discord to the set of things Osiris themes, and fixes two
@@ -146,6 +163,7 @@ causes rather than being flaky.
   progress bar, split out into its own bar island.
 - System-wide 8px rounding and reduced opacity on unfocused windows.
 
+[Unreleased]: https://github.com/xElectric9177/Osiris/compare/v0.4...HEAD
 [v0.4]: https://github.com/xElectric9177/Osiris/compare/v0.3.1...v0.4
 [v0.3.1]: https://github.com/xElectric9177/Osiris/compare/v0.3...v0.3.1
 [v0.3]: https://github.com/xElectric9177/Osiris/compare/v0.2...v0.3

@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+"""Draw the Osiris eye as braille art for the fastfetch / About logo.
+
+Why this is drawn rather than transcoded from an image:
+
+Omarchy ships omarchy-transcode-ascii, and the obvious move is to run a picture
+of an eye through it. That was tried and it does not survive. A dotted eye
+reference is a *sparse dither* -- the one used here was 4,422 white pixels
+scattered across 562x562 -- so downscaling it ~5x to the logo grid area-averages
+those dots into mid grey, and the transcoder's hard threshold then either erases
+the rays entirely or, if the image is pre-blurred to consolidate them, welds the
+whole eye into a solid blob. Neither reads as an eye at 54 columns.
+
+Drawing straight into the target grid sidesteps the resample completely, and
+keeps the art tunable: every shape below is a named constant.
+
+The grid is 2x4 subpixels per character cell, matching braille. A terminal cell
+is roughly twice as tall as it is wide, so a braille subpixel comes out roughly
+SQUARE -- which is why plain circles here render as circles rather than ovals.
+
+Output is deterministic: no randomness, so regenerating always reproduces the
+committed file byte for byte. A random dither was tried for the sclera first and
+read as noise; the regular checker below reads as an even mid-tone instead.
+
+Usage: osiris-eye-logo [output-path]
+"""
+
+import math
+import os
+import sys
+
+COLS, ROWS = 54, 26
+W, H = COLS * 2, ROWS * 4          # 108 x 104 subpixels
+CX, CY = 53.5, 51.5
+
+ALMOND_HALF_W, ALMOND_HALF_H = 42.0, 17.0
+OUTLINE = 0.8
+IRIS_DX, IRIS_RX, IRIS_RY = 1.0, 17.5, 16.0
+PUPIL_DX, PUPIL_R = -4.0, 9.0
+RAYS = 68
+SPIKE_LENGTHS = (46, 34, 26, 20)
+
+grid = [[0] * W for _ in range(H)]
+
+
+def plot(x, y):
+    xi, yi = int(round(x)), int(round(y))
+    if 0 <= xi < W and 0 <= yi < H:
+        grid[yi][xi] = 1
+
+
+# The almond is the lens where two equal circles overlap. Solving for a lens of
+# the wanted half-width and half-height puts their centres this far above and
+# below the eye, at this radius.
+_d = (ALMOND_HALF_W ** 2 - ALMOND_HALF_H ** 2) / (2 * ALMOND_HALF_H)
+_R = ALMOND_HALF_H + _d
+
+
+def lower(x, y):
+    return math.hypot(x - CX, y - (CY + _d))
+
+
+def upper(x, y):
+    return math.hypot(x - CX, y - (CY - _d))
+
+
+def inside(x, y):
+    return lower(x, y) <= _R and upper(x, y) <= _R
+
+
+def edge_at(angle):
+    """Distance from the centre to the almond edge along `angle`."""
+    lo, hi = 0.0, 80.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        if inside(CX + mid * math.cos(angle), CY + mid * math.sin(angle)):
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
+# Sclera: a regular checker, which packs into an even mid-tone texture.
+for y in range(H):
+    for x in range(W):
+        if inside(x, y) and (x + y) % 2 == 0:
+            grid[y][x] = 1
+
+# Almond outline, solid so the eye keeps a hard edge against the rays.
+for y in range(H):
+    for x in range(W):
+        a, b = lower(x, y), upper(x, y)
+        if (abs(a - _R) < OUTLINE and b <= _R) or (abs(b - _R) < OUTLINE and a <= _R):
+            grid[y][x] = 1
+
+# Iris: solid, so it contrasts against the checkered sclera.
+for y in range(H):
+    for x in range(W):
+        if ((x - (CX + IRIS_DX)) / IRIS_RX) ** 2 + ((y - CY) / IRIS_RY) ** 2 <= 1.0 and inside(x, y):
+            grid[y][x] = 1
+
+# Pupil: punched back out to background. This hole, plus the highlight below, is
+# what makes the shape read as an eye instead of a filled lens.
+for y in range(H):
+    for x in range(W):
+        if ((x - (CX + PUPIL_DX)) / PUPIL_R) ** 2 + ((y - CY) / PUPIL_R) ** 2 <= 1.0:
+            grid[y][x] = 0
+
+# Highlight: a crescent inside the pupil, offset up and left.
+for y in range(H):
+    for x in range(W):
+        r = math.hypot(x - (CX + PUPIL_DX - 1), y - (CY - 1))
+        if 5.2 < r < 6.9 and (x - (CX + PUPIL_DX)) < 3.5 and (y - CY) < 3.5:
+            grid[y][x] = 1
+
+# Rays. Reach falls off with |cos| squared so they run long out to the sides and
+# stay short above and below, leaving room for the spikes. Each ray is dashed,
+# solid near the eye and opening up as it travels, so the field thins outward.
+for i in range(RAYS):
+    angle = 2 * math.pi * i / RAYS
+    ca, sa = math.cos(angle), math.sin(angle)
+    start = edge_at(angle) + 2.0
+    end = start + 10 + 26 * abs(ca) ** 2.0
+    r, k = start, 0
+    while r < end:
+        t = (r - start) / max(end - start, 1e-6)
+        if k % 2 == 0 or t < 0.35:
+            plot(CX + r * ca, CY + r * sa)
+        r += 1.0 + 1.9 * t
+        k += 1
+
+# The tall spikes above and below, which the ray envelope deliberately leaves
+# room for. Drawn explicitly so their length and taper are directly controllable.
+for sign in (-1, 1):
+    for j, length in enumerate(SPIKE_LENGTHS):
+        offset = (j + 1) * 1.6
+        for xo in ((-offset, offset) if j else (0,)):
+            r, k = edge_at(math.pi / 2) + 2, 0
+            while r < length:
+                t = (r - 18) / max(length - 18, 1e-6)
+                if k % 2 == 0 or t < 0.4:
+                    plot(CX + xo * (1 - 0.3 * t), CY + sign * r)
+                r += 1.0 + 1.6 * max(t, 0)
+                k += 1
+
+# Pack to braille. Same dot-bit layout omarchy-transcode-ascii uses, so the
+# output is interchangeable with anything Omarchy generates itself.
+DOTS = {(0, 0): 1, (0, 1): 2, (0, 2): 4, (1, 0): 8,
+        (1, 1): 16, (1, 2): 32, (0, 3): 64, (1, 3): 128}
+
+lines = []
+for by in range(0, H, 4):
+    line = ""
+    for bx in range(0, W, 2):
+        bits = 0
+        for (dx, dy), bit in DOTS.items():
+            if by + dy < H and bx + dx < W and grid[by + dy][bx + dx]:
+                bits += bit
+        line += " " if bits == 0 else chr(0x2800 + bits)
+    lines.append(line.rstrip())
+
+while lines and not lines[0].strip():
+    lines.pop(0)
+while lines and not lines[-1].strip():
+    lines.pop()
+
+art = "\n".join(lines) + "\n"
+
+target = sys.argv[1] if len(sys.argv) > 1 else \
+    os.path.expanduser("~/.config/omarchy/branding/osiris-eye.txt")
+
+os.makedirs(os.path.dirname(target), exist_ok=True)
+tmp = target + ".tmp"
+with open(tmp, "w", encoding="utf-8") as fh:
+    fh.write(art)
+os.replace(tmp, target)
+print(f"Wrote {len(lines)} rows x {max(len(l) for l in lines)} cols to {target}")
