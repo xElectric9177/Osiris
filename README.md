@@ -40,7 +40,10 @@ list collapsed to the avatar strip on its right edge, which expands on hover:
 │   ├── amendale.bar/         Custom bar (floating islands) — see its own README
 │   ├── amendale.media/       Now-playing pill: rounded art, progress bar — see its own README
 │   ├── amendale.lock/        Lock screen: clock + username above the wallpaper — see its own README
-│   └── amendale.menu/        Launcher menu, anchored under the bar's left island — see its own README
+│   ├── amendale.menu/        Launcher menu, anchored under the bar's left island — see its own README
+│   ├── amendale.cpu/         CPU load + package temperature, click for btop
+│   ├── amendale.gpu/         GPU load + edge temperature, click for btop
+│   └── amendale.memory/      Memory in use, click for btop
 ├── hooks/theme-set.d/        Live wallpaper + fastfetch logo, both following the active theme
 ├── hooks/post-boot.d/        Starts the live wallpaper at login — nothing else would
 ├── branding/
@@ -108,6 +111,9 @@ cp -r .config/omarchy/plugins/amendale.bar ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.media ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.lock ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.menu ~/.config/omarchy/plugins/
+cp -r .config/omarchy/plugins/amendale.cpu ~/.config/omarchy/plugins/
+cp -r .config/omarchy/plugins/amendale.gpu ~/.config/omarchy/plugins/
+cp -r .config/omarchy/plugins/amendale.memory ~/.config/omarchy/plugins/
 cp .config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh ~/.config/omarchy/hooks/theme-set.d/
 mkdir -p ~/.config/omarchy/hooks/post-boot.d
 cp .config/omarchy/hooks/post-boot.d/osiris-live-wallpaper.sh ~/.config/omarchy/hooks/post-boot.d/
@@ -119,6 +125,11 @@ mkdir -p ~/.local/bin && cp .local/bin/omarchy-screensaver .local/bin/osiris-liv
 chmod +x ~/.config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh \
          ~/.config/omarchy/hooks/post-boot.d/osiris-live-wallpaper.sh \
          ~/.local/bin/omarchy-screensaver ~/.local/bin/osiris-live-wallpaper
+
+# The shell only discovers plugin directories on a rescan, and it caches widget
+# QML once loaded, so a new plugin needs both:
+omarchy-shell shell rescanPlugins
+omarchy restart shell
 
 # fastfetch/lazygit read their live config through a symlink into the current
 # theme's rendered output, matching how Omarchy wires up btop — these aren't

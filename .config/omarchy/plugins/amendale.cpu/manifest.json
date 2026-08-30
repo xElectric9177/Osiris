@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "amendale.cpu",
+  "name": "CPU",
+  "version": "1.0.0",
+  "author": "amendale",
+  "description": "CPU usage and temperature",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "CPU",
+    "description": "CPU usage and temperature, click for btop",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

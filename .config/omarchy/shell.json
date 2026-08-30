@@ -51,6 +51,15 @@
           "id": "omarchy.audio"
         },
         {
+          "id": "amendale.cpu"
+        },
+        {
+          "id": "amendale.gpu"
+        },
+        {
+          "id": "amendale.memory"
+        },
+        {
           "id": "omarchy.monitor"
         },
         {
@@ -78,6 +87,15 @@
   "plugins": [
     {
       "id": "amendale.lock"
+    },
+    {
+      "id": "amendale.cpu"
+    },
+    {
+      "id": "amendale.gpu"
+    },
+    {
+      "id": "amendale.memory"
     }
   ],
   "version": 1

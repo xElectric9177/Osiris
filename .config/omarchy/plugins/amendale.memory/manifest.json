@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "amendale.memory",
+  "name": "Memory",
+  "version": "1.0.0",
+  "author": "amendale",
+  "description": "Memory in use",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Memory",
+    "description": "Memory in use, click for btop",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

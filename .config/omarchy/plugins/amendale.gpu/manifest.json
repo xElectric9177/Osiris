@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "amendale.gpu",
+  "name": "GPU",
+  "version": "1.0.0",
+  "author": "amendale",
+  "description": "GPU usage and temperature",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "GPU",
+    "description": "GPU usage and temperature, click for btop",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

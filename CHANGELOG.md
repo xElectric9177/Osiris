@@ -9,6 +9,24 @@ the letter.
 
 ## [Unreleased]
 
+### Added
+
+- **CPU, GPU and memory readouts in the bar** (`.config/omarchy/plugins/
+  amendale.cpu`, `amendale.gpu`, `amendale.memory`). Three separate bar-widget
+  plugins, so each can be moved, dragged or disabled on its own; they sit in the
+  right island between audio and the display control. Each shows an icon and a
+  percentage, carries the temperature in its hover tooltip where one exists, and
+  opens `btop` on click via `omarchy-launch-or-focus-tui`, which focuses an
+  existing window rather than opening a second.
+
+  Everything is read straight from `/proc` and sysfs with no extra packages:
+  CPU load from `/proc/stat` deltas and its temperature from `k10temp`, GPU load
+  and temperature from `amdgpu`, memory from `MemTotal` vs `MemAvailable`. The
+  hwmon index and the DRM card number are both resolved at startup rather than
+  hardcoded — hwmon indices are assignment-ordered, and on a machine with an
+  iGPU alongside a discrete card the numbering shifts between boots, so the GPU
+  widget picks the card with the most VRAM.
+
 ### Changed
 
 - **The unfocused-window fade is now opt-out-able, and video playback opts out**
