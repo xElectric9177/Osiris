@@ -51,7 +51,7 @@ list collapsed to the avatar strip on its right edge, which expands on hover:
 └── shell.json                Bar layout + transparency
 
 .config/hypr/
-└── looknfeel.lua             10% opacity on unfocused windows (browsers, media and games excepted), 8px rounding system-wide
+└── looknfeel.lua             10% opacity on unfocused windows; media, games and anything playing video excepted; 8px rounding system-wide
 
 .config/spicetify/Themes/Osiris/
 └── color.ini                  Spotify color scheme, mapped from colors.toml (not auto-synced)

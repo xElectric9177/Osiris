@@ -11,17 +11,24 @@ the letter.
 
 ### Changed
 
-- **The unfocused-window fade no longer reaches browsers, media players or
-  games** (`.config/hypr/looknfeel.lua`). It was set as a global
-  `decoration.inactive_opacity`, and a global can't be opted out of: Hyprland's
+- **The unfocused-window fade is now opt-out-able, and video playback opts out**
+  (`.config/hypr/looknfeel.lua`). The fade was a global
+  `decoration.inactive_opacity`, which nothing can escape: Hyprland's
   window-rule `opacity` is a *multiplier* unless every value is suffixed
-  `override`, and every one of Omarchy's own "no transparency" rules is a plain
-  `opacity = "1 1"` multiplier. The 0.9 global therefore multiplied straight
-  through all of them — Brave sat at 0.864 when unfocused, as did mpv, vlc, OBS,
-  Steam, qemu and picture-in-picture. The fade is now a window rule on Omarchy's
-  existing `default-opacity` tag, so anything upstream exempts is genuinely
-  exempt, with no browser class list to maintain here. Browsers additionally get
-  an explicit `override` rule, since upstream only takes them to 0.985.
+  `override`, and every one of Omarchy's "no transparency" rules is a plain
+  `opacity = "1 1"` multiplier. The 0.9 global multiplied straight through all
+  of them — mpv, vlc, OBS, Steam, qemu and picture-in-picture were all still
+  fading at 0.864. The fade now rides on Omarchy's existing `default-opacity`
+  tag instead, so anything upstream exempts is genuinely exempt.
+
+- **A window playing video no longer fades** (same file). Browsers fade like
+  everything else, but hold full opacity while a video is playing in them, so a
+  video on a second monitor stays bright while you work on another. Chromium
+  takes a wake lock while playing video and not for audio alone, which Hyprland
+  reports per window as `inhibiting_idle`; a one-second timer translates that
+  into a `video-playing` tag, since there is no window-rule match for it and no
+  event to hook. The rule matches any window rather than a list of browsers, so
+  it covers browsers that aren't installed yet and needs no maintenance.
 
 ## [v0.4.1] — 2026-08-27
 
