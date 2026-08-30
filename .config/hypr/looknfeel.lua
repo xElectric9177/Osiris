@@ -25,16 +25,30 @@
 --   },
 -- })
 
--- Slight transparency on unfocused windows to help the focused one stand out,
--- plus a small rounding so windows and shell popups aren't sharp-cornered
--- (the shell's own corner radius follows this same value).
+-- A small rounding so windows and shell popups aren't sharp-cornered (the
+-- shell's own corner radius follows this same value).
 hl.config({
   decoration = {
-    active_opacity = 1.0,
-    inactive_opacity = 0.9,
     rounding = 8,
   },
 })
+
+-- Slight transparency on unfocused windows to help the focused one stand out.
+--
+-- Deliberately a window rule on Omarchy's `default-opacity` tag rather than
+-- `decoration.inactive_opacity`. A global setting can't be opted out of:
+-- window-rule opacity is a *multiplier* unless every value is suffixed
+-- `override`, and Omarchy's own exemptions (browsers, mpv, vlc, OBS, Steam,
+-- qemu, picture-in-picture, image viewers) are all plain `opacity = "1 1"`
+-- multipliers. A global 0.9 reached every one of them.
+o.window({ tag = "default-opacity" }, { opacity = "1.0 0.9" })
+
+-- Browsers drop the tag above upstream, but land on `opacity = "1.0 0.985"` --
+-- still a multiplier, so still short of opaque and still at the mercy of any
+-- global setting. Pin them absolutely instead. Matching Omarchy's own tags
+-- leaves the browser class list upstream's to maintain rather than ours.
+o.window({ tag = "chromium-based-browser" }, { opacity = "1.0 override 1.0 override" })
+o.window({ tag = "firefox-based-browser" }, { opacity = "1.0 override 1.0 override" })
 
 -- https://wiki.hypr.land/Configuring/Basics/Variables/#animations
 -- hl.config({
