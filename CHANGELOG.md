@@ -7,7 +7,10 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
-## [Unreleased]
+## [v0.4.3] — 2026-08-30
+
+Adds an alternative Discord theme: DevEvil's heavily-styled Dark+, recoloured to
+the Osiris palette and kept live so his updates flow through.
 
 ### Added
 
@@ -224,7 +227,7 @@ causes rather than being flaky.
   progress bar, split out into its own bar island.
 - System-wide 8px rounding and reduced opacity on unfocused windows.
 
-[Unreleased]: https://github.com/xElectric9177/Osiris/compare/v0.4.2...HEAD
+[v0.4.3]: https://github.com/xElectric9177/Osiris/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/xElectric9177/Osiris/compare/v0.4.1...v0.4.2
 [v0.4.1]: https://github.com/xElectric9177/Osiris/compare/v0.4...v0.4.1
 [v0.4]: https://github.com/xElectric9177/Osiris/compare/v0.3.1...v0.4
