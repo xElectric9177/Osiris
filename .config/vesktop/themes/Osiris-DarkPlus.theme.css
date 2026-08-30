@@ -1,0 +1,62 @@
+/**
+ * @name Osiris DarkPlus
+ * @author DevEvil (original theme) · amendale (Osiris recolour)
+ * @version 1.0.0
+ * @description DevEvil's "Dark+" Discord theme, recoloured to the Osiris palette. It imports DevEvil's theme live, so his updates apply automatically.
+ * @source https://github.com/xElectric9177/Osiris
+ * @authorLink https://devevil.com
+ */
+
+/* ============================================================================
+ * CREDIT
+ *
+ * The entire theme below — every layout rule, every selector — is the work of
+ * DevEvil (DevEvil99), from the "Dark+" Discord theme:
+ *
+ *     https://github.com/DevEvil99/DarkPlus-Discord-Theme
+ *     https://devevil.com
+ *
+ * Used and modified with DevEvil's explicit permission. This file adds nothing
+ * to his design; it only re-points a handful of his own colour variables at the
+ * Osiris palette. All the craft is his.
+ *
+ * ---------------------------------------------------------------------------
+ * HOW THIS STAYS UP TO DATE
+ *
+ * This file does NOT vendor a copy of his CSS. The @import below pulls his live,
+ * canonical source — the same URL his own repo's `Dark+.theme.css` points at,
+ * served as real `text/css` from his GitHub Pages. When DevEvil pushes an
+ * update, it lands at that URL and this theme picks it up on the next load, with
+ * no change needed here.
+ *
+ * The overrides sit *after* the import. His theme drives ~450 rules from four
+ * colour variables and one watermark filter; re-declaring the four variables on
+ * :root (same specificity, later in source order, so they win) recolours the
+ * whole thing. His signature watermark and home icon are left exactly as he
+ * designed them — they are his mark, and part of the credit.
+ * ==========================================================================*/
+
+@import url('https://devevil99.github.io/devevil/BetterDiscordAddons/Theme/Dark+/Dark+.theme.css');
+
+/* ---- Osiris palette, mapped onto DevEvil's variable roles --------------------
+   Values come straight from themes/osiris/colors.toml. Retune here.
+
+     his role            his default   ->  Osiris
+     --darkplus-bg       #212121  main surface   ->  background
+     --darkplus-bg2      #302f2f  raised surface ->  lighter_background
+     --darkplus-sec      #bb86fc  accent         ->  accent
+     --darkplus-links    #cdaef3  link text      ->  bright magenta
+--------------------------------------------------------------------------------*/
+:root {
+  --darkplus-bg:    #120a2e;
+  --darkplus-bg2:   #2a1050;
+  --darkplus-sec:   #9b2ecd;
+  --darkplus-links: #c060e0;
+}
+
+/* The one colour DevEvil hardcodes rather than driving from a variable: the
+   chat top-border divider. Retint it to the Osiris border so it doesn't read as
+   a stray grey line against the violet. */
+.visual-refresh .chat_f75fb0[data-has-border=true] {
+  border-top: 1px solid rgba(155, 46, 205, 0.20) !important;
+}

@@ -72,7 +72,8 @@ list collapsed to the avatar strip on its right edge, which expands on hover:
 └── config.osiris             Feeds the media pill's audio-spectrum visualizer
 
 .config/vesktop/themes/
-└── Osiris.theme.css          Discord theme (Vesktop/Vencord) — original, not a fork
+├── Osiris.theme.css          Discord theme (Vesktop/Vencord) — original, not a fork
+└── Osiris-DarkPlus.theme.css DevEvil's Dark+ theme recoloured to Osiris; live-imports his source (see credit below)
 ```
 
 Everything Omarchy already themes automatically from `colors.toml` — terminals
@@ -355,6 +356,7 @@ directory your client reads and enable it in **Settings → Themes**:
 ```bash
 mkdir -p ~/.config/vesktop/themes
 cp .config/vesktop/themes/Osiris.theme.css ~/.config/vesktop/themes/
+cp .config/vesktop/themes/Osiris-DarkPlus.theme.css ~/.config/vesktop/themes/   # optional: the DevEvil-based recolour
 ```
 
 `~/.config/Vencord/themes/` is the right target instead for a Vencord install
@@ -370,6 +372,29 @@ Because Discord has renamed its tokens over time, both the current family
 (`--background-base-*`, `--background-surface-*`) and the legacy one
 (`--background-primary/secondary/tertiary`) are set. Whichever the running
 client doesn't use is simply inert.
+
+### Osiris DarkPlus — a recolour of DevEvil's Dark+
+
+`Osiris-DarkPlus.theme.css` is a second, very different Discord theme: it takes
+**[DevEvil's Dark+](https://github.com/DevEvil99/DarkPlus-Discord-Theme)** — a
+far more heavily styled theme — and recolours it to the Osiris palette. Used and
+modified with DevEvil's permission. All the design is his; this file only
+re-points four of his colour variables and retints one border.
+
+It is deliberately a **thin importer, not a copy**. It `@import`s DevEvil's live,
+canonical source (the GitHub Pages URL his own repo points at) and overrides the
+variables after it. Two consequences:
+
+- **His updates apply automatically.** When DevEvil pushes a change, it lands at
+  that URL and this theme picks it up on next load — nothing to re-sync here.
+- **It needs network on load**, and his signature watermark and home icon are
+  left exactly as he made them, as part of the credit.
+
+DevEvil's theme is under his own [Private Use
+License](https://github.com/DevEvil99/DarkPlus-Discord-Theme/blob/main/LICENSE);
+this repo does not redistribute his code (it links to it). See `NOTICE`.
+
+Enable whichever you prefer in **Settings → Themes** — the two are independent.
 
 The one place tokens can't help is the **member list**, which collapses to a
 60px strip and expands to 240px on hover. That needs class names, so it uses

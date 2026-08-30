@@ -33,3 +33,30 @@ If you are the rights holder and want this removed, open an issue or contact
 the repository owner and it will be taken down.
 
 The screenshots in screenshots/ show this wallpaper as part of a desktop.
+
+
+Discord theme "Osiris DarkPlus"
+-------------------------------
+
+File:
+    .config/vesktop/themes/Osiris-DarkPlus.theme.css
+
+Based on:
+    "Dark+" by DevEvil (DevEvil99)
+    https://github.com/DevEvil99/DarkPlus-Discord-Theme
+    https://devevil.com
+
+DevEvil is the author of the Dark+ Discord theme. Osiris-DarkPlus is a recolour
+of it to the Osiris palette, made and used with DevEvil's permission. All of the
+theme's design and layout are DevEvil's work; our file only re-points four of
+his colour variables and retints a single border.
+
+This repository does NOT contain a copy of DevEvil's theme. Osiris-DarkPlus
+imports his live, publicly hosted source at load time and overrides the colour
+variables on top of it; his code is referenced, not redistributed here.
+
+Dark+ is licensed under DevEvil's "Private Use License":
+    https://github.com/DevEvil99/DarkPlus-Discord-Theme/blob/main/LICENSE
+That license governs DevEvil's work; it is not the GPL that covers the rest of
+this repository. If you are DevEvil and want this attribution changed or the
+file removed, open an issue or contact the repository owner.
