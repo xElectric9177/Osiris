@@ -7,6 +7,20 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [Unreleased]
+
+### Added
+
+- **Notification center** (`.config/omarchy/plugins/amendale.notifications`). A
+  bar bell that drops a box out of the top-right corner listing the
+  notifications you haven't cleared, each with an `×` to clear it, plus a
+  clear-all and a Do Not Disturb toggle; the bell carries an unread-count badge.
+  It adds no daemon — Omarchy's notification service already archives dismissed
+  toasts to disk, so this reads that history and calls the service to clear and
+  toggle DND. Capped at the daemon's own 10-most-recent. Themed with the shell's
+  own tokens and a 10% translucent surface. Exposes an IPC target so a key can
+  be bound to open it.
+
 ## [v0.4.3] — 2026-08-30
 
 Adds an alternative Discord theme: DevEvil's heavily-styled Dark+, recoloured to
@@ -227,6 +241,7 @@ causes rather than being flaky.
   progress bar, split out into its own bar island.
 - System-wide 8px rounding and reduced opacity on unfocused windows.
 
+[Unreleased]: https://github.com/xElectric9177/Osiris/compare/v0.4.3...HEAD
 [v0.4.3]: https://github.com/xElectric9177/Osiris/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/xElectric9177/Osiris/compare/v0.4.1...v0.4.2
 [v0.4.1]: https://github.com/xElectric9177/Osiris/compare/v0.4...v0.4.1

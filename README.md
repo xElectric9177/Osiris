@@ -43,7 +43,8 @@ list collapsed to the avatar strip on its right edge, which expands on hover:
 │   ├── amendale.menu/        Launcher menu, anchored under the bar's left island — see its own README
 │   ├── amendale.cpu/         CPU load + package temperature, click for btop
 │   ├── amendale.gpu/         GPU load + edge temperature, click for btop
-│   └── amendale.memory/      Memory in use, click for btop
+│   ├── amendale.memory/      Memory in use, click for btop
+│   └── amendale.notifications/ Bell + a top-right box of uncleared notifications
 ├── hooks/theme-set.d/        Live wallpaper + fastfetch logo, both following the active theme
 ├── hooks/post-boot.d/        Starts the live wallpaper at login — nothing else would
 ├── branding/
@@ -115,6 +116,7 @@ cp -r .config/omarchy/plugins/amendale.menu ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.cpu ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.gpu ~/.config/omarchy/plugins/
 cp -r .config/omarchy/plugins/amendale.memory ~/.config/omarchy/plugins/
+cp -r .config/omarchy/plugins/amendale.notifications ~/.config/omarchy/plugins/
 cp .config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh ~/.config/omarchy/hooks/theme-set.d/
 mkdir -p ~/.config/omarchy/hooks/post-boot.d
 cp .config/omarchy/hooks/post-boot.d/osiris-live-wallpaper.sh ~/.config/omarchy/hooks/post-boot.d/
@@ -309,6 +311,34 @@ file `omarchy branding about reset` restores. It writes through a temp file and
 a non-atomic write can be read half-finished. One consequence worth knowing:
 while Osiris is active the hook owns `about.txt`, so a logo set through the
 menu's *Set From Image* would be replaced at the next theme change.
+
+## Notification center
+
+`amendale.notifications` adds a **bell to the bar** that drops a box out of the
+top-right corner listing the notifications you haven't cleared — each with an
+`×` to clear it, plus **Clear all** and a **Do Not Disturb** toggle. The bell
+carries an unread-count badge and shows a slashed bell while DND is on.
+
+It runs no daemon of its own. Omarchy's notification service already archives
+every dismissed toast to `~/.local/state/omarchy/notifications/history/` as one
+JSON per notification; this reads those and calls the service to clear and to
+toggle DND. Two things follow from that:
+
+- **It shows the daemon's history, which the daemon caps at the 10 most recent.**
+  Older ones are dropped by Omarchy before anything can display them. Raising
+  that would mean cloning the notification daemon — deliberately not done here.
+- **A currently on-screen toast appears once it archives** (a few seconds), so
+  the box is single-sourced from history rather than racing the live toasts.
+
+Styling reuses the shell's own tokens — `Style.cornerRadius`, the
+`Color.notifications.*` palette, and the bar-island accent border — so the box
+tracks the theme, with a 10% translucent surface like the rest of the UI.
+
+Bind a key to open it if you like — the widget exposes an IPC target:
+
+```bash
+qs -p "$OMARCHY_PATH/shell" ipc call amendale.notifications toggle
+```
 
 ## Popup animation (optional, needs root)
 

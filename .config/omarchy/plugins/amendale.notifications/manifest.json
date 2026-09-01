@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "amendale.notifications",
+  "name": "Notification Center",
+  "version": "1.0.0",
+  "author": "amendale",
+  "description": "A bell that opens a box of past notifications you can clear",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Notification Center",
+    "description": "Bell + a top-right box listing uncleared notifications",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

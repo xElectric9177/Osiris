@@ -63,6 +63,9 @@
           "id": "omarchy.monitor"
         },
         {
+          "id": "amendale.notifications"
+        },
+        {
           "id": "omarchy.power"
         }
       ]
@@ -96,6 +99,9 @@
     },
     {
       "id": "amendale.memory"
+    },
+    {
+      "id": "amendale.notifications"
     }
   ],
   "version": 1
