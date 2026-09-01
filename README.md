@@ -9,6 +9,15 @@ Discord themes.
 
 Release history is in [`CHANGELOG.md`](CHANGELOG.md).
 
+## Companion tool
+
+**[hypr-window-placement](https://github.com/xElectric9177/hypr-window-placement)**
+lives in its own repo: a small GUI (with a headless CLI) for per-app Hyprland
+window-placement rules — pick an app, pick a monitor (and optionally a
+workspace), and it opens there every time, no hand-editing Hyprland Lua. Built
+for the same Omarchy Lua Hyprland config this theme targets, and works on any
+wlroots/Hyprland setup that uses it.
+
 ## Screenshots
 
 Live wallpaper, floating-islands bar, and the now-playing pill open with its

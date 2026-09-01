@@ -7,6 +7,20 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [v0.4.5] — 2026-09-01
+
+Links a companion tool that now lives in its own repo.
+
+### Added
+
+- **Companion tool link** in the README:
+  [hypr-window-placement](https://github.com/xElectric9177/hypr-window-placement),
+  a small GUI (with a headless CLI) for per-app Hyprland window-placement rules —
+  pick an app, pick a monitor and optional workspace, and it opens there every
+  time, without hand-editing Hyprland Lua. It targets the same Omarchy Lua
+  Hyprland config as this theme but ships and versions separately, so it gets its
+  own repo rather than living here.
+
 ## [v0.4.4] — 2026-09-01
 
 Adds a notification center to the bar: a bell that opens a box of the
@@ -244,6 +258,7 @@ causes rather than being flaky.
   progress bar, split out into its own bar island.
 - System-wide 8px rounding and reduced opacity on unfocused windows.
 
+[v0.4.5]: https://github.com/xElectric9177/Osiris/compare/v0.4.4...v0.4.5
 [v0.4.4]: https://github.com/xElectric9177/Osiris/compare/v0.4.3...v0.4.4
 [v0.4.3]: https://github.com/xElectric9177/Osiris/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/xElectric9177/Osiris/compare/v0.4.1...v0.4.2
