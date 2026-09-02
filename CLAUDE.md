@@ -43,6 +43,7 @@ the repo copy is current — diff it first.
 .config/spicetify/…           Spotify theme (color.ini, not auto-synced)
 .config/vesktop/themes/       Discord themes (.theme.css)
 .local/bin/                   osiris-* scripts + omarchy-screensaver + POPUP-ANIMATION.md
+install.sh                    one-command installer (see below)
 CHANGELOG.md  README.md  LICENSE  NOTICE  screenshots/
 ```
 
@@ -127,6 +128,27 @@ locker `amendale.lock`).
 - Several pieces need manual symlinks / `PATH` ordering / a sudo patch on
   install — the README's **Install** section is the source of truth; keep it in
   sync when install steps change.
+
+## `install.sh` — one-command installer
+
+`install.sh` at the repo root is the **executable form of the README's Install
+section**: it installs the full desktop (theme, bar, all 8 `amendale.*` plugins,
+hooks, `themed/*.tpl`, `shell.json`, `looknfeel.lua`, cava config, the `osiris-*`
++ `omarchy-screensaver` scripts, branding art, the fastfetch eye logo, the
+`.bash_profile` PATH line, and the fastfetch/lazygit/neovim theme links), then
+prompts (default *no*) for the pieces that need sudo or touch other apps: the
+Plymouth boot animation, the popup-animation patch, and the Spotify/Discord
+themes. It also offers to install `cava` (pacman) and `mpvpaper` (yay/paru).
+
+- It supports `curl | bash` by self-cloning when no checkout sits beside it;
+  with no tty every prompt takes its default (core in, extras out).
+- It backs up `shell.json` and `looknfeel.lua` to `*.pre-osiris` before
+  overwriting, and is idempotent.
+- **It does NOT copy `input.lua`** — that file holds machine-specific rules
+  (the Steam/DP-3 fix) and is deliberately left out, matching the README.
+- **Keep it in lockstep with the README Install section and this file.** When an
+  install step, plugin, script, or dependency changes, update `install.sh`, the
+  README, and this note together. `bash -n install.sh` before committing.
 
 ## Third-party assets (do not relicense)
 

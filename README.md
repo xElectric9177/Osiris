@@ -128,6 +128,32 @@ at all; Omarchy replaced it with its own Quickshell lock screen (same for
 
 ## Install
 
+One command. Clone and run the installer:
+
+```bash
+git clone https://github.com/xElectric9177/Osiris && ~/Osiris/install.sh
+```
+
+or straight from the web:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/xElectric9177/Osiris/main/install.sh | bash
+```
+
+It installs the whole desktop automatically — theme, bar, all plugins, hooks,
+scripts, branding, and the editor theme links — then **interactively asks**
+about the pieces that need `sudo` or touch other apps: the boot animation, the
+popup animation, and the Spotify and Discord themes (all default to *no*). It
+also checks for `cava` and `mpvpaper` and offers to install them (pacman / an
+AUR helper). It's safe to re-run, and backs up `shell.json` and `looknfeel.lua`
+to `*.pre-osiris` if you already had your own. Piped through `curl | bash` with
+no terminal, every prompt takes its default (core installs, extras skipped).
+
+### Manual install
+
+The installer is just the executable form of these steps — run them by hand if
+you'd rather pick and choose:
+
 ```bash
 cp -r .config/omarchy/themes/osiris ~/.config/omarchy/themes/
 cp -r .config/omarchy/plugins/amendale.bar ~/.config/omarchy/plugins/

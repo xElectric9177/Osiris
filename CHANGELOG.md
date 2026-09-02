@@ -7,6 +7,33 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [v0.5] — 2026-09-03
+
+Turns the whole config into a one-command install for Omarchy users.
+
+### Added
+
+- **`install.sh` — one-command installer.** Clone and run it (or pipe it through
+  `curl | bash`) and it lays down the full Osiris desktop automatically — theme,
+  bar, all eight `amendale.*` plugins, hooks, `themed/*.tpl`, `shell.json`,
+  `looknfeel.lua`, the cava config, the `osiris-*`/`omarchy-screensaver` scripts,
+  the branding art and fastfetch eye logo, the `.bash_profile` PATH line, and the
+  fastfetch/lazygit/neovim theme links — then applies the theme. It's the
+  executable form of the README's Install section.
+  - **Prompts for the rest.** The pieces that need `sudo` or touch other apps —
+    the Plymouth boot animation, the popup-animation patch, and the Spotify and
+    Discord themes — are offered interactively and default to *no*.
+  - **Checks dependencies**, offering to install `cava` (pacman) and `mpvpaper`
+    (yay/paru) when missing.
+  - **Safe to re-run.** Backs up `shell.json` and `looknfeel.lua` to
+    `*.pre-osiris` before overwriting; self-clones when piped with no checkout;
+    takes every default when run without a terminal (core in, extras out).
+
+### Changed
+
+- **README Install section** now leads with the one-liner; the hand-run steps
+  are kept below as the manual/reference path.
+
 ## [v0.4.6] — 2026-09-02
 
 Gives the machine a custom boot: an OSIRIS glitch-reveal splash on the Plymouth
@@ -292,6 +319,8 @@ causes rather than being flaky.
   progress bar, split out into its own bar island.
 - System-wide 8px rounding and reduced opacity on unfocused windows.
 
+[v0.5]: https://github.com/xElectric9177/Osiris/compare/v0.4.6...v0.5
+[v0.4.6]: https://github.com/xElectric9177/Osiris/compare/v0.4.5...v0.4.6
 [v0.4.5]: https://github.com/xElectric9177/Osiris/compare/v0.4.4...v0.4.5
 [v0.4.4]: https://github.com/xElectric9177/Osiris/compare/v0.4.3...v0.4.4
 [v0.4.3]: https://github.com/xElectric9177/Osiris/compare/v0.4.2...v0.4.3
