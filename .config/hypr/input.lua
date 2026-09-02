@@ -44,16 +44,15 @@
 --   },
 -- })
 
--- Osiris: stop the cursor from teleporting to a window that grabs focus.
--- With Omarchy's default `misc:focus_on_activate = true`, apps that request
--- activation in the background (Steam pinned to the right monitor being the
--- worst offender here) were yanking the pointer across to their screen. This
--- keeps focus-follows-activation but leaves the mouse where it is.
-hl.config({
-  cursor = {
-    no_warps = true,
-  },
-})
+-- Osiris: stop Steam from yanking the pointer across to its monitor.
+-- Omarchy's default `misc:focus_on_activate = true` let Steam (pinned to the
+-- right screen) steal focus when it activated in the background, dragging the
+-- cursor with it. Rather than kill ALL focus-warping globally (the old
+-- `cursor:no_warps = true`, which also stopped alt-tab from moving the cursor
+-- between monitors), deny focus-on-activate for the Steam client only. Focus
+-- warping stays on everywhere else, so alt-tab moves the cursor as expected.
+-- Anchored `^steam$` targets the client window; Proton games are `steam_app_*`.
+o.window("^steam$", { focus_on_activate = false })
 
 -- App-specific touchpad scroll speeds.
 -- o.window("(Alacritty|kitty|foot)", { scroll_touchpad = 1.5 })
