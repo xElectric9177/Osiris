@@ -43,7 +43,8 @@ the repo copy is current — diff it first.
 .config/spicetify/…           Spotify theme (color.ini, not auto-synced)
 .config/vesktop/themes/       Discord themes (.theme.css)
 .local/bin/                   osiris-* scripts + omarchy-screensaver + POPUP-ANIMATION.md
-install.sh                    one-command installer (see below)
+install.sh                    full one-command installer (see below)
+install-theme.sh              theme-only installer (see below)
 CHANGELOG.md  README.md  LICENSE  NOTICE  screenshots/
 ```
 
@@ -149,6 +150,15 @@ themes. It also offers to install `cava` (pacman) and `mpvpaper` (yay/paru).
 - **Keep it in lockstep with the README Install section and this file.** When an
   install step, plugin, script, or dependency changes, update `install.sh`, the
   README, and this note together. `bash -n install.sh` before committing.
+
+`install-theme.sh` is the **theme-only** sibling: it copies just the theme dir
+(`.config/omarchy/themes/osiris`) and runs `omarchy theme set osiris` — the
+palette everywhere Omarchy's theme system reaches, nothing else (no bar,
+plugins, scripts, hooks, or boot animation). Its one opt-in prompt is the live
+animated wallpaper (copies `osiris-live-wallpaper` + its two hooks, offers to
+install `mpvpaper`); declined, the theme uses the static still. Same helpers,
+self-clone, and no-tty defaulting as `install.sh`. Keep both in sync — a change
+to the theme dir or the live-wallpaper wiring touches this script too.
 
 ## Third-party assets (do not relicense)
 

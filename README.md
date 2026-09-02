@@ -140,7 +140,20 @@ or straight from the web:
 curl -fsSL https://raw.githubusercontent.com/xElectric9177/Osiris/main/install.sh | bash
 ```
 
-It installs the whole desktop automatically — theme, bar, all plugins, hooks,
+**Just want the colours?** `install-theme.sh` installs *only* the Osiris theme
+(palette + wallpaper, applied everywhere Omarchy's theme system reaches) and
+nothing else — no custom bar, plugins, scripts, or boot animation:
+
+```bash
+git clone https://github.com/xElectric9177/Osiris && ~/Osiris/install-theme.sh
+# or:  curl -fsSL https://raw.githubusercontent.com/xElectric9177/Osiris/main/install-theme.sh | bash
+```
+
+It uses the static still by default and offers the live animated wallpaper
+(needs `mpvpaper`) as an opt-in prompt.
+
+The full installer below does everything. It installs the whole desktop
+automatically — theme, bar, all plugins, hooks,
 scripts, branding, and the editor theme links — then **interactively asks**
 about the pieces that need `sudo` or touch other apps: the boot animation, the
 popup animation, and the Spotify and Discord themes (all default to *no*). It
