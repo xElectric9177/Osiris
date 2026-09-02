@@ -1,0 +1,354 @@
+#!/bin/bash
+
+# omarchy:summary=Build & apply the OSIRIS glitch-reveal Plymouth boot theme, tinted to the current theme.
+# omarchy:group=osiris
+#
+# Approach A: a self-contained Plymouth theme at /usr/share/plymouth/themes/osiris
+# (NOT the packaged `omarchy` theme, which omarchy update / omarchy-plymouth-set
+# overwrite). It renders the OSIRIS block art (branding/screensaver.txt) into a
+# baked glitch/decrypt-reveal frame sequence + a faded braille "eye" backdrop
+# (branding/about.txt), all tinted from the active theme's colours.toml, emits a
+# Plymouth script that cycles the frames and then shows the LUKS unlock prompt +
+# progress bar, installs it, sets it as the default boot theme, and rebuilds +
+# signs the initramfs.
+#
+# Sprites are scaled to a fraction of the screen at boot (fraction-of-width), and
+# frames are baked hi-res, so it stays crisp on 1440p / 4K (downscale, never up).
+#
+# Needs sudo (writes /usr/share + rebuilds initramfs). Set STAGE_ONLY=1 to only
+# render+stage into a temp dir and skip every privileged step (used to preview).
+
+set -euo pipefail
+
+# ---- tunables -------------------------------------------------------------
+FRAMES="${OSIRIS_GLITCH_FRAMES:-20}"        # baked glitch frames
+FRAME_W="${OSIRIS_GLITCH_FRAME_W:-1280}"    # logo width in the baked frames (hi-res)
+BLOCK="${OSIRIS_GLITCH_BLOCK:-10}"          # decrypt "cell" size (bigger = chunkier + smaller files)
+COLOR_KEY="${OSIRIS_PLYMOUTH_COLOR:-foreground}"   # tint for the OSIRIS logo
+EYE_KEY="${OSIRIS_EYE_COLOR:-dark_foreground}"     # tint for the backdrop eye
+CHROMA_CYAN_KEY="${OSIRIS_CHROMA_A:-cyan}"
+CHROMA_MAG_KEY="${OSIRIS_CHROMA_B:-magenta}"
+
+ART="${OSIRIS_PLYMOUTH_ART:-$HOME/.config/omarchy/branding/screensaver.txt}"
+EYE="${OSIRIS_EYE_ART:-$HOME/.config/omarchy/branding/about.txt}"
+FONT="${OSIRIS_PLYMOUTH_FONT:-/usr/share/fonts/TTF/JetBrainsMonoNerdFont-Regular.ttf}"
+THEME_DIR=/usr/share/plymouth/themes/osiris
+OMARCHY_THEME=/usr/share/plymouth/themes/omarchy   # source of the password/progress assets
+
+# ---- resolve theme colours ------------------------------------------------
+theme_dir="$(readlink -f "$HOME/.local/state/omarchy/current/theme" 2>/dev/null || true)"
+if [[ -z $theme_dir || ! -f $theme_dir/colors.toml ]]; then
+  theme_dir="$(omarchy-theme-dir "$(omarchy-theme-current)" 2>/dev/null || true)"
+fi
+colors="$theme_dir/colors.toml"
+[[ -f $colors ]] || { echo "osiris-plymouth-glitch: no colors.toml (looked in '$theme_dir')" >&2; exit 1; }
+[[ -f $ART ]]    || { echo "osiris-plymouth-glitch: art not found: $ART" >&2; exit 1; }
+[[ -f $EYE ]]    || { echo "osiris-plymouth-glitch: eye art not found: $EYE" >&2; exit 1; }
+[[ -f $FONT ]]   || { echo "osiris-plymouth-glitch: font not found: $FONT" >&2; exit 1; }
+
+theme_color() {
+  awk -F= -v key="$1" '
+    { k=$1; gsub(/[[:space:]]/, "", k)
+      if (k == key) { v=$2; gsub(/[^0-9a-fA-F#]/, "", v); print v; exit } }
+  ' "$colors"
+}
+norm() { local c="${1#\#}"; [[ $c =~ ^[0-9a-fA-F]{6}$ ]] || return 1; printf '#%s' "$c"; }
+
+BG="$(norm "$(theme_color background)")"          || BG="#120a2e"
+FG="$(norm "$(theme_color "$COLOR_KEY")")"        || FG="#e4d4f0"
+EYE_COL="$(norm "$(theme_color "$EYE_KEY")")"     || EYE_COL="#8a76a8"
+CYAN="$(norm "$(theme_color "$CHROMA_CYAN_KEY")")" || CYAN="#7ec8e3"
+MAG="$(norm "$(theme_color "$CHROMA_MAG_KEY")")"   || MAG="#c060e0"
+
+# background colour as 0..1 floats for the Plymouth script
+bgr=$(awk -v n=$((16#${BG:1:2})) 'BEGIN{printf "%.3f", n/255}')
+bgg=$(awk -v n=$((16#${BG:3:2})) 'BEGIN{printf "%.3f", n/255}')
+bgb=$(awk -v n=$((16#${BG:5:2})) 'BEGIN{printf "%.3f", n/255}')
+
+echo "osiris-plymouth-glitch: theme=$(basename "$theme_dir") bg=$BG logo=$FG eye=$EYE_COL chroma=$CYAN/$MAG frames=$FRAMES"
+
+stage="$(mktemp -d "${TMPDIR:-/tmp}/osiris-plymouth-stage.XXXXXX")"
+cleanup() { [[ -n ${KEEP_STAGE:-} ]] || rm -rf "$stage"; }
+trap cleanup EXIT
+
+# ---- render the OSIRIS logo (hi-res, transparent) -------------------------
+magick -background none -fill "$FG" -font "$FONT" -pointsize 96 label:@"$ART" \
+  -resize "${FRAME_W}x" "$stage/_logo.png"
+_dims=$(identify -format "%w %h" "$stage/_logo.png"); FW=${_dims%% *}; FH=${_dims##* }
+magick "$stage/_logo.png" -alpha extract "$stage/_logoA.png"
+MARGIN=$(( FRAME_W / 40 ))                       # room for chroma fringe
+CW=$(( FW + MARGIN * 2 )); CH=$(( FH + MARGIN * 2 ))
+
+# ---- bake the glitch/decrypt-reveal frames --------------------------------
+last=$(( FRAMES - 1 ))
+for i in $(seq 0 $last); do
+  t=$(awk -v i=$i -v n=$last 'BEGIN{printf "%.4f", (n>0)? i/n : 1}')
+  P=$(awk -v t=$t 'BEGIN{r=(t^0.8); p=(1-r)*100; if(p<0)p=0; printf "%d", p}')       # decrypt reveal
+  off=$(awk -v t=$t -v w=$FRAME_W 'BEGIN{g=1-t; printf "%d", g*(w*0.012)+0.5}')       # chroma offset
+  ca=$(awk -v t=$t 'BEGIN{g=1-t; a=g*0.75; printf "%.3f", a}')                        # chroma alpha
+  # block/chunky decrypt reveal: make noise at 1/BLOCK res, threshold, nearest-scale up
+  bw=$(( CW / BLOCK )); bh=$(( CH / BLOCK ))
+  magick -size ${bw}x${bh} xc: +noise Random -colorspace Gray -threshold ${P}% \
+    -filter point -resize ${CW}x${CH}\! "$stage/_mask.png"
+  magick "$stage/_logoA.png" "$stage/_mask.png" -gravity center -compose Multiply -composite "$stage/_ca.png"
+  magick "$stage/_logo.png" -gravity center "$stage/_ca.png" -gravity center -alpha off -compose CopyOpacity -composite "$stage/_rev.png"
+  magick "$stage/_rev.png" -fill "$CYAN" -colorize 100 "$stage/_cy.png"
+  magick "$stage/_rev.png" -fill "$MAG"  -colorize 100 "$stage/_mg.png"
+  printf -v out "$stage/frame-%03d.png" "$i"
+  magick -size ${CW}x${CH} xc:none \
+    \( "$stage/_mg.png" -channel A -evaluate multiply $ca +channel \) -gravity center -geometry +${off}+0 -compose Over -composite \
+    \( "$stage/_cy.png" -channel A -evaluate multiply $ca +channel \) -gravity center -geometry -${off}+0 -compose Over -composite \
+    \( "$stage/_rev.png" \) -gravity center -compose Over -composite \
+    -strip -define png:compression-level=9 "$out"
+done
+_fdims=$(identify -format "%w %h" "$(printf "$stage/frame-%03d.png" 0)"); FRW=${_fdims%% *}; FRH=${_fdims##* }
+
+# ---- faded eye backdrop ---------------------------------------------------
+magick -background none -fill "$EYE_COL" -font "$FONT" -pointsize 40 label:@"$EYE" \
+  -trim +repage "$stage/eye.png"
+
+# ---- password / progress assets (reuse omarchy's, recoloured to logo tint) -
+for a in lock.png entry.png bullet.png progress_bar.png; do
+  if [[ -f $OMARCHY_THEME/$a ]]; then
+    magick "$OMARCHY_THEME/$a" -channel RGB +level-colors "$FG","$FG" "$stage/$a"
+  fi
+done
+[[ -f $OMARCHY_THEME/progress_box.png ]] && cp "$OMARCHY_THEME/progress_box.png" "$stage/progress_box.png"
+
+# ---- emit osiris.plymouth + osiris.script ---------------------------------
+cat > "$stage/osiris.plymouth" <<EOF
+[Plymouth Theme]
+Name=Osiris
+Description=Osiris glitch-reveal splash.
+ModuleName=script
+
+[script]
+ImageDir=$THEME_DIR
+ScriptFile=$THEME_DIR/osiris.script
+ConsoleLogBackgroundColor=0x${BG:1}
+MonospaceFont=Cantarell 11
+Font=Cantarell 11
+EOF
+
+# unrolled frame loads (avoids relying on runtime string/number concat)
+frame_loads=""
+for i in $(seq 0 $last); do
+  printf -v fn "frame-%03d.png" "$i"
+  frame_loads+="  _f = Image(\"$fn\"); frames[$i] = _f.Scale(global.tw, global.th);"$'\n'
+done
+
+cat > "$stage/osiris.script" <<EOF
+# OSIRIS glitch-reveal Plymouth theme — generated by osiris-plymouth-glitch.
+# Do not edit by hand; re-run the generator to regenerate/re-tint.
+
+Window.SetBackgroundTopColor($bgr, $bgg, $bgb);
+Window.SetBackgroundBottomColor($bgr, $bgg, $bgb);
+
+global.sw = Window.GetWidth();
+global.sh = Window.GetHeight();
+
+# --- faded braille "eye" backdrop, scaled to a fraction of screen height ---
+eye.image  = Image("eye.png");
+eye.h      = global.sh * 0.72;
+eye.scaled = eye.image.Scale(eye.image.GetWidth() * eye.h / eye.image.GetHeight(), eye.h);
+eye.sprite = Sprite(eye.scaled);
+eye.sprite.SetX(global.sw / 2 - eye.scaled.GetWidth() / 2);
+eye.sprite.SetY(global.sh / 2 - eye.h / 2);
+eye.sprite.SetOpacity(0.16);
+
+# --- glitch-reveal logo frames, scaled to a fraction of screen width -------
+global.tw = Math.Int(global.sw * 0.42);
+global.th = Math.Int(global.tw * $FRH / $FRW);
+frames = [];
+$frame_loads
+global.nframes = $FRAMES;
+
+logo.sprite = Sprite(frames[0]);
+logo.x = global.sw / 2 - global.tw / 2;
+logo.y = global.sh / 2 - global.th / 2;
+logo.sprite.SetPosition(logo.x, logo.y, 10);
+
+global.idx  = 0;
+global.tick = 0;
+global.hold = 2;     # refresh ticks per frame (~25fps at 50Hz refresh)
+global.done = 0;
+
+fun finish_glitch() {
+  global.done = 1;
+  global.idx  = global.nframes - 1;
+  logo.sprite.SetImage(frames[global.idx]);
+}
+
+fun advance_glitch() {
+  if (global.done == 0) {
+    global.tick++;
+    if (global.tick >= global.hold) {
+      global.tick = 0;
+      global.idx++;
+      if (global.idx >= global.nframes) {
+        finish_glitch();
+      } else {
+        logo.sprite.SetImage(frames[global.idx]);
+      }
+    }
+  }
+}
+
+# ------------- progress bar (ported from the Omarchy theme) ----------------
+global.animation_frame = 0;
+global.fake_progress = 0.0;
+global.max_progress = 0.0;
+global.fake_progress_active = 0;
+global.fake_progress_limit = 0.7;
+global.fake_progress_duration = 15.0;
+global.fake_progress_start_time = 0.0;
+global.password_shown = 0;
+
+progress_box.image  = Image("progress_box.png");
+progress_box.sprite = Sprite(progress_box.image);
+progress_box.x = global.sw / 2 - progress_box.image.GetWidth() / 2;
+progress_box.y = logo.y + global.th + 80;
+progress_box.sprite.SetPosition(progress_box.x, progress_box.y, 1);
+progress_box.sprite.SetOpacity(0);
+
+progress_bar.original_image = Image("progress_bar.png");
+progress_bar.sprite = Sprite();
+progress_bar.image = progress_bar.original_image.Scale(1, progress_bar.original_image.GetHeight());
+progress_bar.x = global.sw / 2 - progress_bar.original_image.GetWidth() / 2;
+progress_bar.y = progress_box.y + (progress_box.image.GetHeight() - progress_bar.original_image.GetHeight()) / 2;
+progress_bar.sprite.SetPosition(progress_bar.x, progress_bar.y, 2);
+progress_bar.sprite.SetOpacity(0);
+
+fun update_progress_bar(progress) {
+  if (progress > global.max_progress) {
+    global.max_progress = progress;
+    width = Math.Int(progress_bar.original_image.GetWidth() * progress);
+    if (width < 1) width = 1;
+    progress_bar.image = progress_bar.original_image.Scale(width, progress_bar.original_image.GetHeight());
+    progress_bar.sprite.SetImage(progress_bar.image);
+  }
+}
+fun show_progress_bar() { progress_box.sprite.SetOpacity(1); progress_bar.sprite.SetOpacity(1); }
+fun hide_progress_bar() { progress_box.sprite.SetOpacity(0); progress_bar.sprite.SetOpacity(0); }
+fun start_fake_progress() {
+  global.fake_progress_active = 1;
+  global.animation_frame = 0; global.max_progress = 0.0;
+  global.fake_progress = 0.0; global.fake_progress_start_time = 0.0;
+}
+fun stop_fake_progress() { global.fake_progress_active = 0; }
+
+# ------------- password entry (ported from the Omarchy theme) --------------
+lock.image   = Image("lock.png");
+entry.image  = Image("entry.png");
+bullet.image = Image("bullet.png");
+
+entry.sprite = Sprite(entry.image);
+entry.x = global.sw / 2 - entry.image.GetWidth() / 2;
+entry.y = logo.y + global.th + 60;
+entry.sprite.SetPosition(entry.x, entry.y, 10001);
+entry.sprite.SetOpacity(0);
+
+lock_height = entry.image.GetHeight() * 0.8;
+lock_scale  = lock_height / 96;
+lock_width  = 84 * lock_scale;
+scaled_lock = lock.image.Scale(lock_width, lock_height);
+lock.sprite = Sprite(scaled_lock);
+lock.sprite.SetPosition(entry.x - lock_width - 15, entry.y + entry.image.GetHeight() / 2 - lock_height / 2, 10001);
+lock.sprite.SetOpacity(0);
+
+bullet.sprites = [];
+
+fun show_password_dialog() { lock.sprite.SetOpacity(1); entry.sprite.SetOpacity(1); }
+fun hide_password_dialog() {
+  lock.sprite.SetOpacity(0); entry.sprite.SetOpacity(0);
+  for (index = 0; bullet.sprites[index]; index++) { bullet.sprites[index].SetOpacity(0); }
+}
+
+fun display_password_callback(prompt, bullets) {
+  global.password_shown = 1;
+  finish_glitch();                # snap to the clean logo so the prompt is legible
+  stop_fake_progress();
+  hide_progress_bar();
+  show_password_dialog();
+  for (index = 0; bullet.sprites[index]; index++) { bullet.sprites[index].SetOpacity(0); }
+  max_bullets = 21;
+  shown = bullets; if (shown > max_bullets) shown = max_bullets;
+  for (index = 0; index < shown; index++) {
+    if (!bullet.sprites[index]) {
+      scaled_bullet = bullet.image.Scale(7, 7);
+      bullet.sprites[index] = Sprite(scaled_bullet);
+      bullet.sprites[index].SetPosition(entry.x + 20 + index * 12, entry.y + entry.image.GetHeight() / 2 - 3.5, 10002);
+    }
+    bullet.sprites[index].SetOpacity(1);
+  }
+}
+
+fun display_normal_callback() {
+  hide_password_dialog();
+  mode = Plymouth.GetMode();
+  if ((mode == "boot" || mode == "resume") && global.password_shown == 1) {
+    show_progress_bar();
+    start_fake_progress();
+  }
+}
+
+fun progress_callback(duration, progress) {
+  if (global.fake_progress_start_time == 0.0) global.fake_progress_start_time = duration;
+  global.real_progress = progress;
+  if (duration > global.fake_progress_start_time && progress > global.fake_progress) {
+    stop_fake_progress();
+    update_progress_bar(progress);
+  }
+}
+
+fun refresh_callback() {
+  advance_glitch();
+  if (global.fake_progress_active == 1) {
+    global.animation_frame++;
+    elapsed = global.animation_frame / 50.0;
+    ratio = elapsed / global.fake_progress_duration;
+    if (ratio > 1.0) ratio = 1.0;
+    eased = 1 - ((1 - ratio) * (1 - ratio));
+    global.fake_progress = eased * global.fake_progress_limit;
+    update_progress_bar(global.fake_progress);
+  }
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+Plymouth.SetBootProgressFunction(progress_callback);
+
+# --- message line ----------------------------------------------------------
+message_sprite = Sprite();
+message_sprite.SetPosition(10, 10, 10000);
+fun display_message_callback(text) { message_sprite.SetImage(Image.Text(text, 1, 1, 1)); message_sprite.SetOpacity(1); }
+fun hide_message_callback(text) { message_sprite.SetOpacity(0); }
+Plymouth.SetDisplayMessageFunction(display_message_callback);
+Plymouth.SetHideMessageFunction(hide_message_callback);
+EOF
+
+# drop the scratch images so only theme assets remain in the stage
+rm -f "$stage"/_*.png
+
+echo "osiris-plymouth-glitch: staged $(ls "$stage" | grep -c 'frame-') frames + assets in $stage"
+
+if [[ -n ${STAGE_ONLY:-} ]]; then
+  echo "STAGE_ONLY set — skipping install. Stage kept at: $stage"
+  KEEP_STAGE=1
+  echo "$stage"
+  exit 0
+fi
+
+# ---- install (root), set default, rebuild + sign initramfs ----------------
+echo "osiris-plymouth-glitch: installing to $THEME_DIR and rebuilding initramfs (sudo)…"
+sudo install -d -o root -g root -m 755 "$THEME_DIR"
+sudo find "$THEME_DIR" -maxdepth 1 -type f -delete
+sudo install -o root -g root -m 644 "$stage"/* "$THEME_DIR"/
+sudo plymouth-set-default-theme osiris
+if command -v omarchy-cmd-present >/dev/null && omarchy-cmd-present limine-mkinitcpio; then
+  sudo limine-mkinitcpio
+else
+  sudo mkinitcpio -P
+fi
+echo "osiris-plymouth-glitch: done. Reboot to see the glitch-reveal boot screen."

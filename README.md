@@ -30,14 +30,23 @@ purple:
 
 ![Launcher menu anchored under the bar](screenshots/menu.png)
 
-btop, fastfetch, and cava themed to match:
+btop, fastfetch, cava and LazyVim themed to match:
 
-![btop and fastfetch themed to match](screenshots/terminal.png)
+![btop, fastfetch, cava and LazyVim themed to match](screenshots/terminal.png)
 
-Discord, Neovim and Spotify carrying the same palette — note Discord's member
-list collapsed to the avatar strip on its right edge, which expands on hover:
+Discord, VS Code and Spotify carrying the same palette:
 
-![Discord, LazyVim and Spotify themed to match](screenshots/apps.png)
+![Discord, VS Code and Spotify themed to match](screenshots/apps.png)
+
+The boot splash — the OSIRIS wordmark decrypting out of glitch over the faded
+braille eye, tinted to the active theme (Plymouth, shown here looping):
+
+![OSIRIS glitch-reveal boot animation](screenshots/boot.gif)
+
+The screensaver, cycling Osiris-tinted terminal-text effects across the same
+OSIRIS wordmark:
+
+![OSIRIS screensaver](screenshots/screensaver.gif)
 
 ## What's here
 
@@ -57,7 +66,8 @@ list collapsed to the avatar strip on its right edge, which expands on hover:
 ├── hooks/theme-set.d/        Live wallpaper + fastfetch logo, both following the active theme
 ├── hooks/post-boot.d/        Starts the live wallpaper at login — nothing else would
 ├── branding/
-│   └── osiris-eye.txt        Braille eye used as the fastfetch + About logo (Osiris only)
+│   ├── osiris-eye.txt        Braille eye used as the fastfetch + About logo (Osiris only)
+│   └── screensaver.txt       OSIRIS wordmark (Delta Corps Priest 1) — shared by the screensaver + boot splash
 ├── themed/                   Extra theme templates Omarchy doesn't ship by default
 │   ├── fastfetch.jsonc.tpl   Themes fastfetch (untouched by Omarchy's own templates)
 │   └── lazygit.yml.tpl       Themes lazygit's UI chrome (borders/selection/accents)
@@ -73,10 +83,12 @@ list collapsed to the avatar strip on its right edge, which expands on hover:
 ├── omarchy-screensaver       Retints all ~35 TTE screensaver effects to Osiris — see Install for why this lives here instead of a theme file
 ├── osiris-eye-logo           Draws the braille eye logo; re-run it to retune the art
 ├── osiris-live-wallpaper     Launches the live wallpaper; shared by both hooks above
+├── osiris-plymouth-glitch    Builds/applies the OSIRIS glitch-reveal Plymouth boot theme (sudo; rebuilds the initramfs)
 └── osiris-popup-animation    Springy slide-out for every bar popup — see POPUP-ANIMATION.md
 
 .config/omarchy/hooks/post-update.d/
-└── osiris-popup-animation.sh Re-applies the popup animation after each `omarchy update`
+├── osiris-popup-animation.sh Re-applies the popup animation after each `omarchy update`
+└── osiris-plymouth-glitch.sh Reasserts the OSIRIS boot theme if an update reset the Plymouth default
 
 .config/cava/
 └── config.osiris             Feeds the media pill's audio-spectrum visualizer
@@ -137,6 +149,16 @@ mkdir -p ~/.local/bin && cp .local/bin/omarchy-screensaver .local/bin/osiris-liv
 chmod +x ~/.config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh \
          ~/.config/omarchy/hooks/post-boot.d/osiris-live-wallpaper.sh \
          ~/.local/bin/omarchy-screensaver ~/.local/bin/osiris-live-wallpaper
+
+# Boot animation (OSIRIS glitch-reveal Plymouth theme). The screensaver art and
+# the boot splash share branding/screensaver.txt, so copy that too, then run the
+# generator as your user — it needs sudo (it rebuilds and signs the initramfs):
+cp .local/bin/osiris-plymouth-glitch ~/.local/bin/
+mkdir -p ~/.config/omarchy/branding && cp .config/omarchy/branding/screensaver.txt ~/.config/omarchy/branding/
+mkdir -p ~/.config/omarchy/hooks/post-update.d
+cp .config/omarchy/hooks/post-update.d/osiris-plymouth-glitch.sh ~/.config/omarchy/hooks/post-update.d/
+chmod +x ~/.local/bin/osiris-plymouth-glitch ~/.config/omarchy/hooks/post-update.d/osiris-plymouth-glitch.sh
+osiris-plymouth-glitch    # renders, installs, sets it as default, rebuilds the initramfs — reboot to see it
 
 # The shell only discovers plugin directories on a rescan, and it caches widget
 # QML once loaded, so a new plugin needs both:

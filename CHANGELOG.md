@@ -7,6 +7,40 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [v0.4.6] — 2026-09-02
+
+Gives the machine a custom boot: an OSIRIS glitch-reveal splash on the Plymouth
+unlock screen, tinted to the active theme.
+
+### Added
+
+- **OSIRIS glitch-reveal boot animation.** A self-contained Plymouth theme
+  (`osiris`) that decrypts the OSIRIS wordmark out of blocky noise with a
+  cyan/magenta chromatic-aberration glitch, over the braille "eye" faded into
+  the backdrop, then hands off to the LUKS unlock prompt and progress bar. Built
+  and applied by **`.local/bin/osiris-plymouth-glitch`**, which renders the
+  frames + assets tinted from the active theme's `colors.toml`, bakes them
+  hi-res so they stay crisp at 1440p/4K (sprites scale to a fraction of the
+  screen at boot), installs the theme, sets it as the default, and rebuilds +
+  signs the initramfs. A **post-update hook**
+  (`hooks/post-update.d/osiris-plymouth-glitch.sh`) reasserts it after
+  `omarchy update` — but only when the default was actually reset, so it skips a
+  redundant initramfs rebuild otherwise.
+- **Boot and screensaver GIFs** in `screenshots/`, shown in the README.
+
+### Changed
+
+- **Wordmark rebranded AMENDALE → OSIRIS** in `branding/screensaver.txt` (Delta
+  Corps Priest 1), so the screensaver and the boot splash both read OSIRIS.
+- **Refreshed screenshots** — desktop, menu, terminal, apps.
+
+### Removed
+
+- **`osiris-plymouth-logo`** (script + post-update hook). It only swapped a
+  static logo onto the stock Omarchy Plymouth/SDDM theme; the `osiris` glitch
+  theme supersedes it, and its hook fought the new default, so it was removed to
+  avoid the conflict.
+
 ## [v0.4.5] — 2026-09-01
 
 Links a companion tool that now lives in its own repo.

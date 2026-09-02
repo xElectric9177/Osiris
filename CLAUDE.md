@@ -75,6 +75,50 @@ before editing a plugin or script.** Notable ones:
   (some live files are intentionally untracked).
 - **Never** push to a branch other than `main` here, force-push, or merge
   without being asked. Confirm before pushing.
+- **Always update this `CLAUDE.md`** as part of any change to the repo (standing
+  request from the user) — document new components, gotchas, and workflows here
+  so the next session can make changes without rediscovering them.
+
+## Boot animation (Plymouth) — `osiris-plymouth-glitch`
+
+The boot/unlock splash is a **custom Plymouth theme**, not the stock Omarchy one.
+Root is LUKS-encrypted, so Plymouth's unlock screen is the first thing at boot
+(not SDDM — autologin is on; not the Quickshell lock — that's the idle/manual
+locker `amendale.lock`).
+
+- **Why a separate theme, not a patch:** `omarchy update` overwrites
+  `/usr/share/plymouth/themes/omarchy`, and `omarchy-plymouth-set` always
+  republishes the packaged `omarchy.script`. So the animation lives in its own
+  theme dir `/usr/share/plymouth/themes/osiris`, set as default via
+  `plymouth-set-default-theme` — omarchy update never touches it.
+- **`.local/bin/osiris-plymouth-glitch`** is the generator. It reads the active
+  theme's `colors.toml`, renders `branding/screensaver.txt` (the OSIRIS wordmark)
+  into a baked block-decrypt glitch frame sequence + a faded braille "eye"
+  backdrop + recoloured password/progress assets, emits `osiris.script` +
+  `osiris.plymouth`, installs to the osiris theme dir, sets it default, and
+  rebuilds + **signs** the initramfs (`limine-mkinitcpio`, else `mkinitcpio -P`).
+  Needs sudo. `STAGE_ONLY=1` renders + stages into a temp dir and skips every
+  privileged step (use it to preview / test without touching the system).
+  Tunables at the top: `OSIRIS_GLITCH_FRAMES`, `FRAME_W`, `BLOCK`,
+  `OSIRIS_PLYMOUTH_COLOR`, `OSIRIS_EYE_COLOR`.
+- **Hook** `hooks/post-update.d/osiris-plymouth-glitch.sh` reasserts osiris as
+  the default *only if* an update reset it (skips a redundant initramfs rebuild).
+- **Gotchas baked into the generator, keep them:**
+  - Plymouth can't run ImageMagick at boot, so the glitch is **pre-baked frames**
+    the script cycles via `SetRefreshFunction`; the block-decrypt reveal keeps the
+    frames small (~1.2 MB total) vs. per-pixel noise (~7.6 MB).
+  - Sprites scale to a **fraction of `Window.GetWidth()`** at boot and frames are
+    baked hi-res → crisp on **1440p minimum, up to 4K** (downscale, never up).
+  - The Plymouth script dialect: **no bare `return;`** (use if/else); and in the
+    generator, read `identify` dims via `$(...)` not `read` (its `-format` output
+    has no trailing newline, which trips `read` under `set -e`).
+- **Re-tint after a theme switch:** re-run `osiris-plymouth-glitch` (not
+  automatic — it would sudo + rebuild the initramfs on every theme change).
+- **Rollback:** `sudo plymouth-set-default-theme omarchy && sudo limine-mkinitcpio`.
+- `branding/screensaver.txt` is shared: the **screensaver** (`omarchy-screensaver`
+  → `ttfx`) and the boot splash both render it, so rebranding the wordmark
+  changes both. (Superseded and removed: the older `osiris-plymouth-logo`, which
+  only swapped a static logo onto the stock omarchy Plymouth/SDDM theme.)
 
 ## Requirements (for the config to fully work)
 
