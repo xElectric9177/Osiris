@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# omarchy:summary=Apply the OSIRIS ASCII art as the Plymouth/SDDM boot logo, tinted to the current theme.
+# omarchy:group=osiris
+#
+# Osiris: renders the OSIRIS block art (~/.config/omarchy/branding/screensaver.txt,
+# the same art the screensaver uses) into a logo.png colored from the active
+# theme's palette, then hands it to omarchy-plymouth-set. That command swaps the
+# Plymouth (and SDDM) logo + colors and rebuilds the initramfs, so it needs sudo
+# -- this script does too. Re-run it to re-tint after a theme change; the
+# post-update hook re-runs it after `omarchy update` (which resets Plymouth).
+
+set -euo pipefail
+
+ART="${OSIRIS_PLYMOUTH_ART:-$HOME/.config/omarchy/branding/screensaver.txt}"
+FONT="${OSIRIS_PLYMOUTH_FONT:-/usr/share/fonts/TTF/JetBrainsMonoNerdFont-Regular.ttf}"
+# colors.toml key that tints the art. Override with OSIRIS_PLYMOUTH_COLOR
+# (e.g. accent, bright_foreground). bg/text always come from the theme.
+COLOR_KEY="${OSIRIS_PLYMOUTH_COLOR:-foreground}"
+# Logo width in px after render (kept under a 1080p screen so it never clips).
+TARGET_WIDTH="${OSIRIS_PLYMOUTH_WIDTH:-1000}"
+
+# Resolve the active theme dir (state symlink first, CLI as fallback).
+theme_dir="$(readlink -f "$HOME/.local/state/omarchy/current/theme" 2>/dev/null || true)"
+if [[ -z $theme_dir || ! -f $theme_dir/colors.toml ]]; then
+  theme_dir="$(omarchy-theme-dir "$(omarchy-theme-current)" 2>/dev/null || true)"
+fi
+colors="$theme_dir/colors.toml"
+
+[[ -f $colors ]] || { echo "osiris-plymouth-logo: no colors.toml found (looked in '$theme_dir')" >&2; exit 1; }
+[[ -f $ART ]]    || { echo "osiris-plymouth-logo: art not found: $ART" >&2; exit 1; }
+[[ -f $FONT ]]   || { echo "osiris-plymouth-logo: font not found: $FONT" >&2; exit 1; }
+
+# Pull `key = "#rrggbb"` out of colors.toml.
+theme_color() {
+  awk -F= -v key="$1" '
+    { k=$1; gsub(/[[:space:]]/, "", k)
+      if (k == key) { v=$2; gsub(/[^0-9a-fA-F#]/, "", v); print v; exit } }
+  ' "$colors"
+}
+
+# Normalise to #RRGGBB or fail (caller supplies the fallback).
+norm() {
+  local c="${1#\#}"
+  [[ $c =~ ^[0-9a-fA-F]{6}$ ]] || return 1
+  printf '#%s' "$c"
+}
+
+bg="$(norm "$(theme_color background)")"       || bg="#1a1b26"
+fg="$(norm "$(theme_color foreground)")"        || fg="#ffffff"
+logo="$(norm "$(theme_color "$COLOR_KEY")")"    || logo="$fg"
+
+# omarchy-plymouth-set requires a regular (non-symlink) file it can open as us.
+tmp="$(mktemp --suffix=.png "${TMPDIR:-/tmp}/osiris-plymouth-XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
+
+# Render the art in the chosen colour on a transparent canvas (the Plymouth
+# background colour is applied separately by omarchy-plymouth-set), then scale
+# to a screen-safe width.
+magick -background none -fill "$logo" -font "$FONT" -pointsize 48 \
+  label:@"$ART" -resize "${TARGET_WIDTH}x" "$tmp"
+
+echo "osiris-plymouth-logo: applying (bg=$bg text=$fg logo=$logo) — rebuilds initramfs, may prompt for sudo…"
+omarchy-plymouth-set "$bg" "$fg" "$tmp"
+echo "osiris-plymouth-logo: done. Reboot to see the new unlock screen."
