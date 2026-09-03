@@ -5,13 +5,9 @@
 #   curl -fsSL https://raw.githubusercontent.com/xElectric9177/Osiris/main/install.sh | bash
 #
 # Installs the full Osiris desktop (theme, bar, plugins, hooks, scripts, editor
-# links) automatically, then interactively offers the pieces that need sudo or
-# touch other apps: the boot animation, the popup animation, and the Spotify and
-# Discord themes. Safe to re-run — it overwrites Osiris's own files and backs up
-# the two files most likely to hold your own edits (shell.json, looknfeel.lua).
-#
-# The README is the prose source of truth for what each step does and why; this
-# script is the executable form of its Install section. Keep them in sync.
+# links), then interactively offers the sudo/other-app pieces: boot animation,
+# popup animation, Spotify and Discord themes. Safe to re-run — backs up
+# shell.json and looknfeel.lua before overwriting. See the README for details.
 set -euo pipefail
 
 REPO_URL="https://github.com/xElectric9177/Osiris.git"
@@ -43,9 +39,7 @@ ask() {
   [[ $reply =~ ^[Yy] ]]
 }
 
-# ------------------------------------------------------- locate payload / self-clone
-# When run from a checkout, the payload sits next to this script. When piped
-# through `curl | bash` there is no checkout, so clone one and use that.
+# --- locate payload, or self-clone when piped through curl | bash
 SRC=""
 self=${BASH_SOURCE[0]:-}
 if [[ -n $self && -f $(dirname -- "$self")/.config/omarchy/shell.json ]]; then
@@ -158,10 +152,7 @@ chmod +x "$LOCALBIN/omarchy-screensaver" "$LOCALBIN/osiris-live-wallpaper" "$LOC
          "$CFG/omarchy/hooks/post-boot.d/osiris-live-wallpaper.sh"
 ok "scripts + branding"
 
-# ------------------------------------------------------------------ core: PATH order
-# ~/.local/bin must precede $OMARCHY_PATH/bin so the retinted omarchy-screensaver
-# wins. It goes in .bash_profile (not .bashrc) — Hyprland's exec dispatcher spawns
-# login-but-non-interactive shells that skip .bashrc but still run .bash_profile.
+# --- core: PATH order (~/.local/bin first, in .bash_profile so Hypr exec picks it up)
 profile="$HOME/.bash_profile"
 line='export PATH="$HOME/.local/bin:$PATH"'
 if [[ ! -f $profile ]] || ! grep -qxF "$line" "$profile"; then
@@ -171,10 +162,8 @@ else
   ok "PATH already set in .bash_profile"
 fi
 
-# ----------------------------------------------------------- core: editor theme links
-# fastfetch/lazygit/neovim read the current theme through symlinks into Omarchy's
-# rendered theme output (same wiring as btop). Neovim's target is *relative* — the
-# exact spelling Omarchy's own migrations match on, so future migrations maintain it.
+# --- core: editor theme links (symlinks into Omarchy's rendered theme output;
+# neovim's target is *relative* — the spelling Omarchy's migrations maintain)
 step "Editor theme links"
 mkdir -p "$CFG/fastfetch" "$CFG/lazygit" "$CFG/nvim/lua/plugins"
 ln -sf  "$HOME/.local/state/omarchy/current/theme/fastfetch.jsonc" "$CFG/fastfetch/config.jsonc"

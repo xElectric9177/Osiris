@@ -4,18 +4,13 @@
 #   git clone https://github.com/xElectric9177/Osiris && ~/Osiris/install-theme.sh
 #   curl -fsSL https://raw.githubusercontent.com/xElectric9177/Osiris/main/install-theme.sh | bash
 #
-# Installs *only* the Osiris theme — the dark indigo/violet palette (bar, borders,
-# menu, terminal, btop, editors: everywhere Omarchy's theme system reaches) plus
-# the wallpaper — and applies it. It does NOT touch the custom bar, plugins,
-# scripts, hooks, or boot animation; for the full desktop use ./install.sh.
-#
-# By default the wallpaper is the static still. The live animated version needs a
-# helper script + mpvpaper, so it's offered as an opt-in prompt.
+# Installs and applies only the Osiris theme + wallpaper. For the full desktop
+# use ./install.sh. Live animated wallpaper is an opt-in prompt.
 set -euo pipefail
 
 REPO_URL="https://github.com/xElectric9177/Osiris.git"
 
-# ---------------------------------------------------------------- output helpers
+# --- output helpers
 if [[ -t 1 ]]; then
   B=$'\033[1m'; GRN=$'\033[32m'; YLW=$'\033[33m'; RED=$'\033[31m'; RST=$'\033[0m'
 else
@@ -41,13 +36,13 @@ ask() {
   [[ $reply =~ ^[Yy] ]]
 }
 
-# ------------------------------------------------------- locate payload / self-clone
+# --- locate payload, or self-clone when piped through curl | bash
 SRC=""
 self=${BASH_SOURCE[0]:-}
 if [[ -n $self && -f $(dirname -- "$self")/.config/omarchy/themes/osiris/colors.toml ]]; then
   SRC=$(cd -- "$(dirname -- "$self")" && pwd)
 else
-  have git || die "git is required to fetch Osiris. Install git, or clone the repo and run ./install-theme.sh."
+  have git || die "git is required to fetch Osiris."
   SRC=$(mktemp -d)
   step "Fetching Osiris"
   git clone --depth 1 "$REPO_URL" "$SRC" >/dev/null 2>&1 || die "Could not clone $REPO_URL"
@@ -55,10 +50,10 @@ else
   ok "cloned to $SRC"
 fi
 
-# ------------------------------------------------------------------ sanity checks
+# --- sanity checks
 [[ $EUID -ne 0 ]] || die "Run this as your normal user, not root."
 have omarchy || [[ -d $HOME/.config/omarchy ]] || \
-  die "This doesn't look like an Omarchy system. Osiris targets Omarchy — see https://omarchy.org/."
+  die "This doesn't look like an Omarchy system — see https://omarchy.org/."
 
 CFG="$HOME/.config"
 LOCALBIN="$HOME/.local/bin"
@@ -70,13 +65,13 @@ cp -r "$SRC/.config/omarchy/themes/osiris" "$CFG/omarchy/themes/"
 ok "theme copied to ~/.config/omarchy/themes/osiris"
 echo
 
-# ------------------------------------------------- optional: live animated wallpaper
+# --- optional: live animated wallpaper (needs mpvpaper)
 if ask "Enable the live animated wallpaper? (needs mpvpaper; otherwise a static still is used)" n; then
   if ! have mpvpaper; then
     helper=""
     for h in yay paru; do have "$h" && { helper=$h; break; }; done
     if [[ -n $helper ]] && ask "mpvpaper isn't installed — install it now with $helper?" y; then
-      "$helper" -S --needed mpvpaper || warn "mpvpaper install failed; falling back to the static still."
+      "$helper" -S --needed mpvpaper || warn "mpvpaper install failed; using the static still."
     else
       warn "Without mpvpaper the wallpaper stays the static still. Install mpvpaper (AUR), then re-run."
     fi
@@ -96,15 +91,14 @@ if ask "Enable the live animated wallpaper? (needs mpvpaper; otherwise a static 
   echo
 fi
 
-# ----------------------------------------------------------------- apply the theme
+# --- apply the theme
 step "Applying theme"
 if have omarchy; then
   omarchy theme set osiris && ok "theme set to osiris"
 else
-  warn "'omarchy' command not found — set it yourself with: omarchy theme set osiris"
+  warn "'omarchy' not found — set it yourself with: omarchy theme set osiris"
 fi
 echo
 
 step "Done."
-info "Just the Osiris theme is installed. For the full desktop (bar, plugins,"
-info "boot animation, and more), run the complete installer: ./install.sh"
+info "Theme only. For the full desktop run ./install.sh"
