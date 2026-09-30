@@ -125,6 +125,23 @@ for p in bar media lock menu cpu gpu memory notifications shutdown; do
 done
 ok "theme + 9 plugins"
 
+# The shutdown timer widget reuses the shared engine/components from the Gamers
+# Need Sleep repo rather than vendoring them here — fetch core/ + ui/ into the
+# plugin dir so its BarWidget can import them.
+GNS_URL="https://github.com/xElectric9177/gamers-need-sleep"
+sd="$CFG/omarchy/plugins/amendale.shutdown"
+tmp="$(mktemp -d)"
+if have git && git clone --depth 1 "$GNS_URL" "$tmp/gns" >/dev/null 2>&1; then
+  rm -rf "$sd/core" "$sd/ui"; cp -r "$tmp/gns/core" "$tmp/gns/ui" "$sd/"
+  ok "shutdown widget: fetched core + ui from Gamers Need Sleep"
+elif have curl && curl -fsSL "$GNS_URL/archive/refs/heads/main.tar.gz" | tar -xz -C "$tmp"; then
+  rm -rf "$sd/core" "$sd/ui"; cp -r "$tmp"/gamers-need-sleep-*/core "$tmp"/gamers-need-sleep-*/ui "$sd/"
+  ok "shutdown widget: fetched core + ui from Gamers Need Sleep"
+else
+  warn "could not fetch the shutdown widget's core/ui from $GNS_URL — the pill won't load until you add them"
+fi
+rm -rf "$tmp"
+
 # ------------------------------------------------------------------- core: hooks
 cp_into ".config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh" "$CFG/omarchy/hooks/theme-set.d"
 cp_into ".config/omarchy/hooks/theme-set.d/osiris-about-logo.sh"          "$CFG/omarchy/hooks/theme-set.d"

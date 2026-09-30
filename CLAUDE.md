@@ -70,13 +70,19 @@ A power-glyph bar pill that drops down a shutdown/sleep timer (power off / resta
 / suspend / hibernate, after a countdown or at a specific local time). It renders
 as its **own floating island, left of the right cluster**, and slides with it.
 
-- **Vendored, not authored here.** The plugin is a self-contained bundle
-  (`manifest.json`, `BarWidget.qml`, `OmarchyTheme.qml`, and copied `core/` + `ui/`)
-  built from the standalone **Gamers Need Sleep** project
-  (`github.com/xElectric9177/gamers-need-sleep`). To update it: rebuild there
-  (`scripts/build.sh`) and copy `build/plugin/` over `amendale.shutdown/`. `ui/`
-  components are theme-agnostic; `OmarchyTheme.qml` binds them to the live Omarchy
-  palette (`qs.Commons` `Color`/`Style`).
+- **This repo owns only the Omarchy glue; the engine comes from Gamers Need Sleep.**
+  Tracked here: `manifest.json`, `BarWidget.qml`, `OmarchyTheme.qml`. The shared
+  `core/` (scheduler etc.) and `ui/` (theme-agnostic components) are **not vendored**
+  — `install.sh` fetches them from the standalone **Gamers Need Sleep** repo
+  (`github.com/xElectric9177/gamers-need-sleep`, `main`) into the installed plugin
+  dir, and `.gitignore` keeps them out of this repo. `ui/` components are
+  theme-agnostic; `OmarchyTheme.qml` binds their `theme` contract to the live
+  Omarchy palette (`qs.Commons` `Color`/`Style`).
+  - **To change the timer's behaviour or look:** edit the GNS repo (`core`/`ui`)
+    and push; re-running Osiris `install.sh` pulls it in. Edit `BarWidget.qml` /
+    `OmarchyTheme.qml` here only for the Omarchy-specific bar wiring/theming.
+  - The live `~/.config/.../amendale.shutdown/` needs `core/` + `ui/` present to
+    load; if you edit this plugin live, fetch them (or re-run install.sh).
 - **Bar wiring (in `amendale.bar/Bar.qml`, horizontal path):** the right island's
   `BorderSurface` has `id: rightPill`; `rightGroup` is a `ModuleList` using
   `entriesExcludingId(layoutEntries("right"), "amendale.shutdown")`; and a separate

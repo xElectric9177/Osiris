@@ -7,6 +7,19 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [v0.6.1] — 2026-09-30
+
+### Changed
+
+- **`amendale.shutdown` no longer vendors the timer engine.** The shared `core/`
+  and `ui/` are now fetched from the standalone
+  [Gamers Need Sleep](https://github.com/xElectric9177/gamers-need-sleep) repo by
+  `install.sh` (git clone, or curl tarball) into the installed plugin dir, instead
+  of being committed here. This repo tracks only the Omarchy glue
+  (`manifest.json`, `BarWidget.qml`, `OmarchyTheme.qml`); `.gitignore` keeps the
+  fetched `core/`/`ui/` out. To change the timer's behaviour or look, edit the GNS
+  repo and re-run `install.sh`.
+
 ## [v0.6] — 2026-09-30
 
 Adds a shutdown/sleep timer to the bar.

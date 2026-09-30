@@ -161,8 +161,9 @@ short version:
   its own floating island just left of the right cluster and slides with it as
   the tray drawer extends. Drops down a timer to power off / restart / suspend /
   hibernate after a countdown or at a specific local time (fires at local wall
-  clock via `systemd-run --user`, no root). Vendored from the standalone
-  [Gamers Need Sleep](https://github.com/xElectric9177/gamers-need-sleep) project.
+  clock via `systemd-run --user`, no root). The Omarchy glue lives here; its shared
+  engine/components are fetched at install from the standalone
+  [Gamers Need Sleep](https://github.com/xElectric9177/gamers-need-sleep) repo.
 - **Popup animation** (optional, sudo) — patches the packaged Omarchy shell so
   bar popups spring out; a post-update hook re-applies it, `revert` undoes it.
   See [`.local/bin/POPUP-ANIMATION.md`](.local/bin/POPUP-ANIMATION.md).

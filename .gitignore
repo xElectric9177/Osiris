@@ -1,0 +1,5 @@
+# The shutdown timer widget reuses core/ui from the Gamers Need Sleep repo
+# (github.com/xElectric9177/gamers-need-sleep), fetched by install.sh — not
+# vendored here. Only the Omarchy glue (manifest/BarWidget/OmarchyTheme) is tracked.
+.config/omarchy/plugins/amendale.shutdown/core/
+.config/omarchy/plugins/amendale.shutdown/ui/
