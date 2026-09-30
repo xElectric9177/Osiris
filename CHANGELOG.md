@@ -7,6 +7,33 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [v0.6] — 2026-09-30
+
+Adds a shutdown/sleep timer to the bar.
+
+### Added
+
+- **Shutdown/sleep timer pill (`amendale.shutdown`).** A power-glyph pill that
+  drops down a timer to power off, restart, suspend or hibernate — either after a
+  countdown or at a specific local time. The set time fires at the local wall
+  clock (scheduled via `systemd-run --user`'s `OnCalendar`, so e.g. 23:00 BST
+  fires at 23:00 BST, not UTC); no root is needed (logind/polkit), and aborting
+  just stops the transient unit. The drop-down has both modes, the four actions,
+  force / wall-broadcast / desktop-notification toggles, a live command preview,
+  an active countdown ring with an abort button, and a `block`-mode inhibitor-lock
+  warning. It inherits the live Omarchy theme.
+  - The widget is vendored from the standalone **Gamers Need Sleep** project
+    (`github.com/xElectric9177/gamers-need-sleep`), which also ships it as a
+    standalone app and an AUR package.
+
+### Changed
+
+- **`amendale.bar` renders the timer as its own floating island**, left of the
+  right cluster, anchored to the right island's left edge so it slides along as
+  that island extends (e.g. when the tray drawer opens) — mirroring how the media
+  pill is pulled out on the left. `shell.json` lists `amendale.shutdown` in the
+  right layout. `install.sh` now installs 9 `amendale.*` plugins.
+
 ## [v0.5] — 2026-09-03
 
 Turns the whole config into a one-command install for Omarchy users.

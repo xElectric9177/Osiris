@@ -64,6 +64,31 @@ before editing a plugin or script.** Notable ones:
   `amendale.bar` filters on the exact id `amendale.media`). Don't rename a
   plugin without updating every reference — see each plugin's README.
 
+## Shutdown/sleep timer pill (`amendale.shutdown`)
+
+A power-glyph bar pill that drops down a shutdown/sleep timer (power off / restart
+/ suspend / hibernate, after a countdown or at a specific local time). It renders
+as its **own floating island, left of the right cluster**, and slides with it.
+
+- **Vendored, not authored here.** The plugin is a self-contained bundle
+  (`manifest.json`, `BarWidget.qml`, `OmarchyTheme.qml`, and copied `core/` + `ui/`)
+  built from the standalone **Gamers Need Sleep** project
+  (`github.com/xElectric9177/gamers-need-sleep`). To update it: rebuild there
+  (`scripts/build.sh`) and copy `build/plugin/` over `amendale.shutdown/`. `ui/`
+  components are theme-agnostic; `OmarchyTheme.qml` binds them to the live Omarchy
+  palette (`qs.Commons` `Color`/`Style`).
+- **Bar wiring (in `amendale.bar/Bar.qml`, horizontal path):** the right island's
+  `BorderSurface` has `id: rightPill`; `rightGroup` is a `ModuleList` using
+  `entriesExcludingId(layoutEntries("right"), "amendale.shutdown")`; and a separate
+  `shutdownPill` + `shutdownGroup` (`entryOnlyId`) are anchored to `rightPill.left`
+  so the pill tracks the extending right island. This mirrors how `amendale.media`
+  is pulled out on the left. **Only the horizontal bar was wired** — `verticalBar`
+  still uses the default `RightModules` (the widget would sit inside the bottom
+  pill); mirror it there if a vertical/left-right bar is ever used.
+- Enabled by listing `amendale.shutdown` in `shell.json` `bar.layout.right`.
+- Scheduling uses `systemd-run --user` (logind/polkit, no root); `--on-calendar`
+  is local-timezone, so a set time fires at local wall clock. Abort stops the unit.
+
 ## Git / commit workflow
 
 - **Commit subjects:** imperative mood ("Add a notification center to the bar").
@@ -133,7 +158,7 @@ locker `amendale.lock`).
 ## `install.sh` — one-command installer
 
 `install.sh` at the repo root is the **executable form of the README's Install
-section**: it installs the full desktop (theme, bar, all 8 `amendale.*` plugins,
+section**: it installs the full desktop (theme, bar, all 9 `amendale.*` plugins,
 hooks, `themed/*.tpl`, `shell.json`, `looknfeel.lua`, cava config, the `osiris-*`
 + `omarchy-screensaver` scripts, branding art, the fastfetch eye logo, the
 `.bash_profile` PATH line, and the fastfetch/lazygit/neovim theme links), then

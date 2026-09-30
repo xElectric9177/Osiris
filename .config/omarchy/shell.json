@@ -36,6 +36,9 @@
       ],
       "right": [
         {
+          "id": "amendale.shutdown"
+        },
+        {
           "id": "omarchy.tray"
         },
         {

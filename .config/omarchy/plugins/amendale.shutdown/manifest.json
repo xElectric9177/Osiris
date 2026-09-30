@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "amendale.shutdown",
+  "name": "Gamers Need Sleep",
+  "version": "0.1.0",
+  "author": "amendale",
+  "description": "Shutdown / sleep timer drop-down",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Gamers Need Sleep",
+    "description": "Schedule a shutdown, restart, suspend or hibernate after a delay or at a set local time",
+    "category": "System",
+    "allowMultiple": false
+  }
+}

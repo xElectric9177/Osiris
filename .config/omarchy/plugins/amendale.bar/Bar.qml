@@ -1192,6 +1192,7 @@ Item {
         }
 
         BorderSurface {
+          id: rightPill
           visible: rightGroup.width > 0
           anchors.right: parent.right
           anchors.rightMargin: parent.islandGap
@@ -1203,9 +1204,36 @@ Item {
           borderSpec: Border.flat(parent.islandGlow, 1)
         }
 
-        RightModules {
+        ModuleList {
           id: rightGroup
+          entries: root.entriesExcludingId(root.layoutEntries("right"), "amendale.shutdown")
+          region: "right"
           anchors.right: parent.right
+          anchors.rightMargin: parent.islandGap + Style.space(8)
+          anchors.verticalCenter: parent.verticalCenter
+        }
+
+        // Shutdown/sleep timer as its own floating pill, glued to the left edge
+        // of the right island so it slides along as that island extends (e.g.
+        // when the tray drawer opens).
+        BorderSurface {
+          id: shutdownPill
+          visible: shutdownGroup.width > 0
+          anchors.right: rightPill.left
+          anchors.rightMargin: parent.islandGap
+          anchors.verticalCenter: parent.verticalCenter
+          width: shutdownGroup.width + Style.space(16)
+          height: parent.islandHeight
+          radius: height / 2
+          color: "transparent"
+          borderSpec: Border.flat(parent.islandGlow, 1)
+        }
+
+        ModuleList {
+          id: shutdownGroup
+          entries: root.entryOnlyId(root.layoutEntries("right"), "amendale.shutdown")
+          region: "right"
+          anchors.right: rightPill.left
           anchors.rightMargin: parent.islandGap + Style.space(8)
           anchors.verticalCenter: parent.verticalCenter
         }

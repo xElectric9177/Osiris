@@ -36,7 +36,8 @@ Release history is in [`CHANGELOG.md`](CHANGELOG.md).
 │   ├── amendale.cpu/         CPU load + package temp, click for btop
 │   ├── amendale.gpu/         GPU load + edge temp, click for btop
 │   ├── amendale.memory/      Memory in use, click for btop
-│   └── amendale.notifications/ Bell + top-right box of uncleared notifications
+│   ├── amendale.notifications/ Bell + top-right box of uncleared notifications
+│   └── amendale.shutdown/    Shutdown/sleep timer pill, its own island left of the right cluster
 ├── hooks/theme-set.d/        Live wallpaper + fastfetch logo, following the active theme
 ├── hooks/post-boot.d/        Starts the live wallpaper at login
 ├── branding/                 Braille-eye fastfetch logo + OSIRIS wordmark art
@@ -156,6 +157,12 @@ short version:
 - **Notification center** (`amendale.notifications`) — a bar bell + top-right box
   reading Omarchy's own notification history (capped at 10). Toggle:
   `qs -p "$OMARCHY_PATH/shell" ipc call amendale.notifications toggle`.
+- **Shutdown/sleep timer** (`amendale.shutdown`) — a power-glyph pill that sits as
+  its own floating island just left of the right cluster and slides with it as
+  the tray drawer extends. Drops down a timer to power off / restart / suspend /
+  hibernate after a countdown or at a specific local time (fires at local wall
+  clock via `systemd-run --user`, no root). Vendored from the standalone
+  [Gamers Need Sleep](https://github.com/xElectric9177/gamers-need-sleep) project.
 - **Popup animation** (optional, sudo) — patches the packaged Omarchy shell so
   bar popups spring out; a post-update hook re-applies it, `revert` undoes it.
   See [`.local/bin/POPUP-ANIMATION.md`](.local/bin/POPUP-ANIMATION.md).

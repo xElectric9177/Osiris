@@ -120,10 +120,10 @@ echo
 # --------------------------------------------------------------------- core: theme
 step "Theme, bar, plugins"
 cp_into ".config/omarchy/themes/osiris" "$CFG/omarchy/themes"
-for p in bar media lock menu cpu gpu memory notifications; do
+for p in bar media lock menu cpu gpu memory notifications shutdown; do
   cp_into ".config/omarchy/plugins/amendale.$p" "$CFG/omarchy/plugins"
 done
-ok "theme + 8 plugins"
+ok "theme + 9 plugins"
 
 # ------------------------------------------------------------------- core: hooks
 cp_into ".config/omarchy/hooks/theme-set.d/osiris-live-wallpaper-hook.sh" "$CFG/omarchy/hooks/theme-set.d"
