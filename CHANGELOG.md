@@ -7,6 +7,18 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [v0.6.2] — 2026-09-30
+
+### Fixed
+
+- **`amendale.shutdown` adopts upstream timer fixes** from Gamers Need Sleep
+  [v0.1.0](https://github.com/xElectric9177/gamers-need-sleep/releases/tag/v0.1.0):
+  the specific-time pre-warning no longer drifts from the action across suspend
+  (calendar target instead of a monotonic timer), the countdown ring is anchored
+  at arm-confirmed time, and a stale Hibernate selection falls back to Power Off
+  when there is no swap. No change to the glue tracked here — `install.sh` re-fetches
+  `core/`+`ui/` from the GNS `main` branch, so the fixes land on the next install.
+
 ## [v0.6.1] — 2026-09-30
 
 ### Changed

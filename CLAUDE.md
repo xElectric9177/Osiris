@@ -81,6 +81,10 @@ as its **own floating island, left of the right cluster**, and slides with it.
   - **To change the timer's behaviour or look:** edit the GNS repo (`core`/`ui`)
     and push; re-running Osiris `install.sh` pulls it in. Edit `BarWidget.qml` /
     `OmarchyTheme.qml` here only for the Omarchy-specific bar wiring/theming.
+  - GNS is versioned (GitHub releases, `v0.1.0`+), but `install.sh` **intentionally
+    tracks `main`**, not a pinned tag, so GNS fixes reach desktops on the next
+    install without an Osiris bump. An Osiris release just records when the fixes
+    were adopted.
   - The live `~/.config/.../amendale.shutdown/` needs `core/` + `ui/` present to
     load; if you edit this plugin live, fetch them (or re-run install.sh).
 - **Bar wiring (in `amendale.bar/Bar.qml`, horizontal path):** the right island's
