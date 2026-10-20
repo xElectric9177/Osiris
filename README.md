@@ -54,9 +54,11 @@ Release history is in [`CHANGELOG.md`](CHANGELOG.md).
 ├── osiris-eye-logo           Draws the braille eye logo
 ├── osiris-live-wallpaper     Launches the live wallpaper
 ├── osiris-plymouth-glitch    Builds/applies the boot theme (sudo; rebuilds initramfs)
-└── osiris-popup-animation    Springy slide-out for bar popups — see POPUP-ANIMATION.md
+├── osiris-popup-animation    Springy slide-out for bar popups — see POPUP-ANIMATION.md
+└── osiris-menu-applibrary-patch  Restores the menu's Apps list for cloned plugins (sudo)
 
-.config/omarchy/hooks/post-update.d/   Reasserts the popup animation + boot theme after updates
+.config/omarchy/hooks/post-update.d/   Reasserts the popup animation, boot theme,
+                                       and menu Apps-library fix after updates
 ```
 
 Everything Omarchy themes from `colors.toml` (terminals, btop, VS Code,
@@ -88,8 +90,9 @@ git clone https://github.com/xElectric9177/Osiris && ~/Osiris/install.sh
 
 It installs the whole desktop (theme, bar, plugins, hooks, scripts, branding,
 editor links), then interactively offers the pieces that need `sudo` or touch
-other apps — boot animation, popup animation, Spotify and Discord themes (all
-default to *no*). It checks for `cava`/`mpvpaper` and offers to install them,
+other apps — boot animation, popup animation, the menu Apps-library fix
+(defaults to *yes* — needed for the launcher menu's Apps list), and the Spotify
+and Discord themes. It checks for `cava`/`mpvpaper` and offers to install them,
 is safe to re-run, and backs up `shell.json` and `looknfeel.lua`. Piped through
 `curl | bash`, every prompt takes its default (core in, extras skipped).
 

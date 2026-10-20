@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+"""Keep the Omarchy menu's Apps library working for cloned menu plugins.
+
+The Quickshell `omarchy-menu` builds its Apps list from a plugin manifest. When
+a *cloned* menu plugin (e.g. the user's `amendale.menu`) is handed across the
+panel Instantiator, its manifest arrives as a QVariantMap whose nested `kinds`
+array is a QVariantList, not a JS Array. Two functions in the packaged shell
+then misjudge it:
+
+    manifestHasKind()   Array.isArray(manifest.kinds) is false, so every kind
+                        check returns false and the plugin looks capability-less
+    pluginShellFor()    builds the scoped shell from that degraded manifest, so
+                        the menu gets appLibrary: null -> "Nothing here yet"
+
+This is the fix from omacom/omarchy PR #10785, which was *closed without
+merging*, so it will never arrive upstream. `/usr/share/omarchy/shell/shell.qml`
+is a package file that `omarchy update` replaces wholesale, so the fix is
+installed as a post-update hook and re-applies itself after every update: each
+update lands the new upstream shell.qml and this re-patches it, rather than
+freezing a vendored copy.
+
+Every replacement is anchored to an exact snippet. If an upstream refactor
+moves the code the patch targets, apply aborts with a specific error and leaves
+the shell untouched and working (just with the bug) rather than half-patched.
+
+Usage:
+    osiris-menu-applibrary-patch apply     patch (default; needs root)
+    osiris-menu-applibrary-patch check     report status, no changes, no root
+    osiris-menu-applibrary-patch revert    restore from backup
+"""
+
+import os
+import shutil
+import subprocess
+import sys
+
+TARGET = "/usr/share/omarchy/shell/shell.qml"
+BACKUP_REL = ".local/state/osiris/menu-applibrary-backup"
+MARKER = "OSIRIS-APPLIB"
+
+# --- manifestHasKind ---------------------------------------------------------
+
+MHK_ANCHOR = """  function manifestHasKind(manifest, kind) {
+    return !!manifest && Array.isArray(manifest.kinds)
+      && manifest.kinds.indexOf(kind) !== -1
+  }"""
+
+MHK_NEW = """  function manifestHasKind(manifest, kind) {
+    // OSIRIS-APPLIB: a manifest crossing the panel Instantiator arrives with
+    // its kinds as a QVariantList, not a JS Array, so Array.isArray fails;
+    // accept anything indexable. (omacom/omarchy PR #10785, closed unmerged.)
+    if (!manifest || manifest.kinds == null) return false
+    var kinds = manifest.kinds
+    if (typeof kinds.indexOf === "function") return kinds.indexOf(kind) !== -1
+    var n = kinds.length
+    if (typeof n !== "number") return false
+    for (var i = 0; i < n; i++) {
+      if (kinds[i] === kind) return true
+    }
+    return false
+  }"""
+
+# --- pluginShellFor ----------------------------------------------------------
+
+PSF_ANCHOR = """    if (!key) return null
+    return shell.createScopedPluginShell(manifest, key, true, shell.pluginHasBarCapabilities(manifest))
+  }
+
+  function pluginRegistryFor(manifest) {"""
+
+PSF_NEW = """    if (!key) return null
+    // OSIRIS-APPLIB: a manifest handed through a QObject model (the panel
+    // Instantiator's modelData) is a QVariantMap whose nested arrays are no
+    // longer JS Arrays, so kind checks under-declare capabilities and the menu
+    // gets appLibrary: null. The registry holds the raw manifest for this id;
+    // prefer it. (omacom/omarchy PR #10785, closed unmerged.)
+    var raw = shell.pluginRegistry ? shell.pluginRegistry.installedPlugins[key] : null
+    var resolved = raw && raw.id === key ? raw : manifest
+    return shell.createScopedPluginShell(resolved, key, true, shell.pluginHasBarCapabilities(resolved))
+  }
+
+  function pluginRegistryFor(manifest) {"""
+
+PATCHES = {
+    TARGET: [
+        ("manifestHasKind accepts QVariantList kinds", MHK_ANCHOR, MHK_NEW),
+        ("pluginShellFor prefers the registry manifest", PSF_ANCHOR, PSF_NEW),
+    ],
+}
+
+
+def invoking_user():
+    """The user who invoked us, seen through sudo or pkexec."""
+    user = os.environ.get("SUDO_USER")
+    if user:
+        return user
+    uid = os.environ.get("PKEXEC_UID")
+    if uid:
+        try:
+            import pwd
+            return pwd.getpwuid(int(uid)).pw_name
+        except (KeyError, ValueError):
+            pass
+    return None
+
+
+def backup_dir():
+    """Resolve the backup location against the *invoking* user's home.
+
+    os.path.expanduser("~") would give root's home once re-exec'd under
+    sudo/pkexec, stashing the originals where the asking user can't read them.
+    """
+    user = invoking_user()
+    if user:
+        try:
+            import pwd
+            return os.path.join(pwd.getpwnam(user).pw_dir, BACKUP_REL)
+        except KeyError:
+            pass
+    return os.path.join(os.path.expanduser("~"), BACKUP_REL)
+
+
+def is_patched(text):
+    return MARKER in text
+
+
+def check():
+    ok = True
+    for path in PATCHES:
+        if not os.path.exists(path):
+            print(f"missing: {path}")
+            ok = False
+            continue
+        with open(path) as f:
+            text = f.read()
+        state = "patched" if is_patched(text) else "stock"
+        print(f"{state:8}  {path}")
+        if state == "stock":
+            ok = False
+    return ok
+
+
+def stock_text(path):
+    """The unpatched contents of `path`.
+
+    An already-patched file can't be re-patched in place (its anchors are
+    gone), so recover the pristine text from the backup when present."""
+    with open(path) as f:
+        text = f.read()
+    if not is_patched(text):
+        return text
+    backup = os.path.join(backup_dir(), os.path.basename(path))
+    if os.path.exists(backup):
+        with open(backup) as f:
+            saved = f.read()
+        if not is_patched(saved):
+            return saved
+    return None
+
+
+def apply():
+    # Build and verify before writing anything.
+    planned = {}
+    for path, patches in PATCHES.items():
+        if not os.path.exists(path):
+            sys.exit(f"error: {path} not found - is Omarchy installed?")
+        original = stock_text(path)
+        if original is None:
+            sys.exit(
+                f"error: {os.path.basename(path)} is already patched and no "
+                f"clean backup was found to rebuild from.\n"
+                f"Run `omarchy update` to restore the stock file, then re-apply."
+            )
+        text = original
+        for name, old, new in patches:
+            count = text.count(old)
+            if count != 1:
+                sys.exit(
+                    f"error: {os.path.basename(path)}: expected exactly one "
+                    f"match for '{name}', found {count}.\n"
+                    f"Upstream has likely refactored this file. The patch needs "
+                    f"updating before it can be re-applied; the shell is "
+                    f"untouched and still works, just without the fix."
+                )
+            text = text.replace(old, new, 1)
+        planned[path] = (original, text)
+
+    backups = backup_dir()
+    os.makedirs(backups, exist_ok=True)
+    wrote = False
+    for path, (original, text) in planned.items():
+        backup = os.path.join(backups, os.path.basename(path))
+        if not os.path.exists(backup):
+            with open(backup, "w") as f:
+                f.write(original)
+        with open(path) as f:
+            if f.read() == text:
+                continue
+        with open(path, "w") as f:
+            f.write(text)
+        print(f"patched: {path}")
+        wrote = True
+
+    # We ran as root, so the backup tree is root-owned; hand it to the user.
+    user = invoking_user()
+    if user:
+        subprocess.run(["chown", "-R", f"{user}:", backups], check=False)
+
+    if not wrote:
+        print("already up to date - no changes needed")
+        return False
+    print(f"originals backed up to {backups}")
+    return True
+
+
+def revert():
+    restored = False
+    backup = os.path.join(backup_dir(), os.path.basename(TARGET))
+    if os.path.exists(backup):
+        shutil.copy2(backup, TARGET)
+        print(f"restored: {TARGET}")
+        restored = True
+    if not restored:
+        print("no backup found - run `omarchy update` to restore stock files")
+    return restored
+
+
+def main():
+    action = sys.argv[1] if len(sys.argv) > 1 else "apply"
+
+    if action == "check":
+        sys.exit(0 if check() else 1)
+
+    if action not in ("apply", "revert"):
+        sys.exit(f"usage: {os.path.basename(sys.argv[0])} [apply|check|revert]")
+
+    # Re-exec with privilege when not already root. A terminal (the post-update
+    # hook, or a normal shell) is the right place for a sudo prompt; without a
+    # tty sudo can only fail, so fall back to pkexec and let Omarchy's polkit
+    # agent raise a graphical prompt.
+    if os.geteuid() != 0:
+        me = os.path.abspath(__file__)
+        if sys.stdin.isatty() or sys.stderr.isatty():
+            os.execvp("sudo", ["sudo", sys.executable, me, action])
+        os.execvp("pkexec", ["pkexec", sys.executable, me, action])
+
+    if action == "apply":
+        if not apply():
+            return
+    else:
+        if not revert():
+            return
+
+    restart_shell()
+
+
+def restart_shell():
+    """Reload the shell so the change is live. Best-effort: if the user's
+    session can't be reached, the fix waits for the next shell restart."""
+    user = os.environ.get("SUDO_USER")
+    uid = os.environ.get("PKEXEC_UID")
+    if not user and uid:
+        try:
+            import pwd
+            user = pwd.getpwuid(int(uid)).pw_name
+        except (KeyError, ValueError):
+            user = None
+    if not user:
+        print("patched; run `omarchy restart shell` to load it")
+        return
+
+    try:
+        import pwd
+        pw = pwd.getpwnam(user)
+    except KeyError:
+        print("patched; run `omarchy restart shell` to load it")
+        return
+
+    # runuser -u does NOT reset the environment, so hand the shell the target
+    # user's own HOME and runtime dir rather than leaking root's: the shell
+    # resolves its config as $HOME/.config/omarchy/shell.json, and a leaked
+    # HOME=/root would silently fall back to built-in defaults.
+    env = dict(os.environ,
+               HOME=pw.pw_dir,
+               USER=user,
+               LOGNAME=user,
+               XDG_RUNTIME_DIR=f"/run/user/{pw.pw_uid}")
+    for leaked in ("XDG_CONFIG_HOME", "XDG_STATE_HOME", "XDG_DATA_HOME",
+                   "SUDO_USER", "SUDO_UID", "SUDO_GID", "PKEXEC_UID"):
+        env.pop(leaked, None)
+
+    result = subprocess.run(
+        ["runuser", "-u", user, "--", "omarchy", "restart", "shell"],
+        check=False, env=env,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if result.returncode != 0:
+        print("patched; run `omarchy restart shell` to load it")
+
+
+if __name__ == "__main__":
+    main()

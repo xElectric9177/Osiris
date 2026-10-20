@@ -7,6 +7,22 @@ Versions are milestones for how much of the desktop changed — this is a
 personal config, not an API, so semver is followed in spirit rather than to
 the letter.
 
+## [v0.7] — 2026-10-20
+
+### Fixed
+
+- **Launcher menu's Apps list survives `omarchy update`.** The cloned
+  `amendale.menu` plugin lost its Apps list ("Nothing here yet") whenever an
+  update reset the packaged `shell.qml`: a cloned manifest crossing the panel
+  Instantiator arrives with its `kinds` as a QVariantList, so the stock
+  `manifestHasKind`/`pluginShellFor` misjudge it and hand the menu
+  `appLibrary: null`. New `osiris-menu-applibrary-patch` (with `apply`/`check`/
+  `revert`) patches both functions, and a `post-update.d` hook re-applies it
+  after every update. This is omacom/omarchy PR #10785, **closed unmerged**, so
+  it is carried here rather than waited on. `install.sh` offers it (default
+  *yes*). Same self-re-patching approach as the popup animation — it rides
+  upstream fixes instead of freezing a vendored `shell.qml`.
+
 ## [v0.6.2] — 2026-09-30
 
 ### Fixed

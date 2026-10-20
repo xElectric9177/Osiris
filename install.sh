@@ -239,6 +239,22 @@ if ask "Install the popup slide-out animation? (needs sudo, patches Omarchy's sh
   echo
 fi
 
+# --- menu app-library fix (patches the packaged omarchy tree, needs sudo) ------
+# Restores the Apps list for cloned menu plugins (amendale.menu), which the
+# stock shell.qml drops to "Nothing here yet". omacom/omarchy PR #10785, closed
+# unmerged, so it re-applies after every `omarchy update` via the hook.
+if ask "Install the menu Apps-library fix? (needs sudo, patches Omarchy's shell)" y; then
+  cp "$SRC/.local/bin/osiris-menu-applibrary-patch" "$LOCALBIN/"
+  cp_into ".config/omarchy/hooks/post-update.d/osiris-menu-applibrary.sh" "$CFG/omarchy/hooks/post-update.d"
+  chmod +x "$LOCALBIN/osiris-menu-applibrary-patch" "$CFG/omarchy/hooks/post-update.d/osiris-menu-applibrary.sh"
+  if "$LOCALBIN/osiris-menu-applibrary-patch" apply; then
+    ok "menu Apps-library fix applied"
+  else
+    warn "patcher aborted (upstream may have moved) — nothing changed. 'osiris-menu-applibrary-patch revert' to undo."
+  fi
+  echo
+fi
+
 # --- Spotify theme (spicetify) -------------------------------------------------
 if ask "Apply the Spotify (spicetify) theme?" n; then
   if have spicetify; then

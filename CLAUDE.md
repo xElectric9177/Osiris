@@ -157,6 +157,42 @@ locker `amendale.lock`).
   changes both. (Superseded and removed: the older `osiris-plymouth-logo`, which
   only swapped a static logo onto the stock omarchy Plymouth/SDDM theme.)
 
+## Menu Apps-library fix — `osiris-menu-applibrary-patch`
+
+The launcher menu (`amendale.menu`, a **cloned** menu plugin) builds its Apps
+list from a plugin manifest. When a cloned plugin's manifest crosses the panel
+Instantiator, its nested `kinds` array arrives as a QVariantList, not a JS
+Array — so the stock `shell.qml` misjudges the plugin (`Array.isArray` fails)
+and hands the menu `appLibrary: null`, i.e. **"Nothing here yet."**
+
+- **The fix** patches two functions in `/usr/share/omarchy/shell/shell.qml`:
+  `manifestHasKind` (accept any indexable `kinds`, not only JS Arrays) and
+  `pluginShellFor` (resolve the raw manifest from `pluginRegistry` instead of
+  the degraded Instantiator copy). It is omacom/omarchy **PR #10785**, which was
+  **closed without merging** — so it is *not* coming upstream and must be
+  carried here indefinitely.
+- **Why a patch, not a vendored file** (same reasoning as the popup animation):
+  `shell.qml` is a package file `omarchy update` replaces wholesale. Patching
+  the newly-landed file after each update rides along with upstream fixes
+  instead of freezing a stale copy.
+- **`.local/bin/osiris-menu-applibrary-patch`** (Python) does the work:
+  `apply` (default, needs root — re-execs via `sudo` in a terminal, else
+  `pkexec`), `check` (report stock/patched, no root), `revert` (restore from
+  backup). It is idempotent via an `OSIRIS-APPLIB` marker in the patched code,
+  verifies each anchor matches **exactly once** before writing anything, and
+  **aborts loudly** if an upstream refactor moved the code — leaving the shell
+  working (just with the bug) rather than half-patched. Pristine originals are
+  backed up under `~/.local/state/osiris/menu-applibrary-backup/` and chowned
+  back to the user. On success it restarts the shell via `runuser` with the
+  user's own `HOME`/`XDG_RUNTIME_DIR` (never root's).
+- **Hook** `hooks/post-update.d/osiris-menu-applibrary.sh` re-applies it after
+  every `omarchy update`. (During a real update this runs in a terminal, so the
+  re-exec uses `sudo` and rides the update's existing auth — no extra GUI prompt.)
+- **If it breaks after an update:** run `osiris-menu-applibrary-patch check`;
+  if it reports a stale anchor, refresh the `*_ANCHOR`/`*_NEW` snippets in the
+  patcher against the new `shell.qml` (the two target functions have stayed
+  byte-identical to the PR's pre-patch text even as line numbers drift).
+
 ## Requirements (for the config to fully work)
 
 - Omarchy (base). `mpvpaper` (AUR) for the live wallpaper. `cava` for the media
@@ -172,9 +208,10 @@ section**: it installs the full desktop (theme, bar, all 9 `amendale.*` plugins,
 hooks, `themed/*.tpl`, `shell.json`, `looknfeel.lua`, cava config, the `osiris-*`
 + `omarchy-screensaver` scripts, branding art, the fastfetch eye logo, the
 `.bash_profile` PATH line, and the fastfetch/lazygit/neovim theme links), then
-prompts (default *no*) for the pieces that need sudo or touch other apps: the
-Plymouth boot animation, the popup-animation patch, and the Spotify/Discord
-themes. It also offers to install `cava` (pacman) and `mpvpaper` (yay/paru).
+prompts for the pieces that need sudo or touch other apps: the Plymouth boot
+animation, the popup-animation patch, the menu Apps-library fix (default *yes* —
+the launcher's Apps list needs it), and the Spotify/Discord themes (the rest
+default *no*). It also offers to install `cava` (pacman) and `mpvpaper` (yay/paru).
 
 - It supports `curl | bash` by self-cloning when no checkout sits beside it;
   with no tty every prompt takes its default (core in, extras out).
