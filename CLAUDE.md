@@ -38,7 +38,7 @@ the repo copy is current — diff it first.
 ├── branding/osiris-eye.txt   braille eye logo (fastfetch + About)
 ├── themed/*.tpl              fastfetch + lazygit theme templates
 └── shell.json                bar layout + transparency
-.config/hypr/                 looknfeel.lua, input.lua (user overrides)
+.config/hypr/                 looknfeel.lua (opacity/rounding/VRR), input.lua (user overrides)
 .config/cava/config.osiris    feeds the media pill visualizer
 .config/spicetify/…           Spotify theme (color.ini, not auto-synced)
 .config/vesktop/themes/       Discord themes (.theme.css)

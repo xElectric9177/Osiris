@@ -33,6 +33,18 @@ hl.config({
   },
 })
 
+-- Osiris: adaptive sync (FreeSync/VRR). The main display (AOC Q27G4N on DP-2)
+-- is a 48-180Hz FreeSync panel; without this Hyprland drives it at a fixed
+-- refresh and games tear below the ceiling. Mode 2 = fullscreen-only, so VRR
+-- engages for fullscreen games (Warframe et al.) but the desktop and the
+-- animated mpvpaper wallpaper stay at fixed refresh, avoiding VRR flicker on
+-- the multi-monitor setup. (1 = always-on, 0 = off.)
+hl.config({
+  misc = {
+    vrr = 2,
+  },
+})
+
 -- Slight transparency on unfocused windows to help the focused one stand out.
 --
 -- Deliberately a window rule on Omarchy's `default-opacity` tag rather than
@@ -50,6 +62,14 @@ o.window({ tag = "default-opacity" }, { opacity = "1.0 0.9" })
 -- fades through the rule above anyway.
 o.window({ tag = "chromium-based-browser" }, { opacity = "1.0 override 0.9 override" })
 o.window({ tag = "firefox-based-browser" }, { opacity = "1.0 override 0.9 override" })
+
+-- Steam client, likewise: Omarchy exempts all of Steam (`steam.*` ->
+-- `-default-opacity` + `opacity = "1 1"`), so it never fades. Re-add just the
+-- client on the same override form as the browsers so it dims when unfocused.
+-- Anchored `^steam$` matches only the client window class; Proton game windows
+-- are `steam_app_*` and stay caught by Omarchy's exemption, so games remain
+-- fully opaque. Above the video rule below, so playback still wins.
+o.window("^steam$", { opacity = "1.0 override 0.9 override" })
 
 -- ...except while something is playing video. Deliberately matches any window
 -- rather than just browsers: the wake lock below is the whole signal, so this
